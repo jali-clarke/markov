@@ -4,6 +4,8 @@ module Markov (
     stream
 ) where
 
+import Debug.Trace (trace)
+
 import Data.Maybe (maybe)
 import qualified Data.Map as Map
 import Control.Monad.Random.Lazy (MonadRandom)
@@ -18,8 +20,8 @@ buildMarkov = buildMarkovHelper . calculateStats
 getNext :: (Ord a, MonadRandom m) => Markov a -> a -> m (Maybe a)
 getNext (Markov markovMap) a = maybe (pure Nothing) measure (Map.lookup a markovMap)
 
-stream :: (Ord a, MonadRandom m) => Markov a -> a -> m [a]
-stream markov seed = getNext markov seed >>= fmap (seed :) . (maybe (pure []) (stream markov))
+stream :: (Show a, Ord a, MonadRandom m) => Markov a -> a -> m [a]
+stream markov seed = trace (show seed) $ fmap (seed :) $ getNext markov seed >>= maybe (pure []) (stream markov)
 
 buildMarkovHelper :: Map.Map a (Map.Map a Int) -> Markov a
 buildMarkovHelper =
