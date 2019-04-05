@@ -37,16 +37,10 @@ buildHelper (p, a) probable =
     case probable of
         Nil -> Leaf p a
         Leaf p' _ -> Node 2 p' probable (Leaf p a)
-        Node n pLeft probLeft probRight ->
+        Node n pLeft probLeft pgrobRight ->
             if numLeaves probLeft < numLeaves probRight
-                then
-                    let
-                        newProbLeft = buildHelper (p, a) probLeft
-                    in Node (n + 1) (pLeft + p) newProbLeft probRight
-                else
-                    let
-                        newProbRight = buildHelper (p, a) probRight
-                    in Node (n + 1) pLeft probLeft newProbRight
+                then Node (n + 1) (pLeft + p) (buildHelper (p, a) probLeft) probRight
+                else Node (n + 1) pLeft probLeft (buildHelper (p, a) probRight)
 
 buildProbable :: [(Double, a)] -> Probable a
 buildProbable probabilities =
