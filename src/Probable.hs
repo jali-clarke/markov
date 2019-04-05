@@ -10,15 +10,14 @@ import Control.Monad.Random.Lazy (MonadRandom(getRandomR))
 data Probable a =
     Nil
     | Leaf Double a
-    | Node Int Double (Probable a) Double (Probable a)
-    deriving Show
+    | Node Int Double (Probable a) (Probable a)
 
 measureHelper :: Probable a -> Double -> Maybe a
 measureHelper probable p =
     case probable of
         Nil -> Nothing
         Leaf _ a -> Just a
-        Node _ pLeft probLeft pRight probRight ->
+        Node _ pLeft probLeft probRight ->
             if p > pLeft
                 then measureHelper probRight (p - pLeft)
                 else measureHelper probLeft p
@@ -31,23 +30,23 @@ numLeaves probable =
     case probable of
         Nil -> 0
         Leaf _ _ -> 1
-        Node n _ _ _ _ -> n
+        Node n _ _ _  -> n
 
 buildHelper :: (Double, a) -> Probable a -> Probable a
 buildHelper (p, a) probable =
     case probable of
         Nil -> Leaf p a
-        Leaf p' _ -> Node 2 p' probable p (Leaf p a)
-        Node n pLeft probLeft pRight probRight ->
+        Leaf p' _ -> Node 2 p' probable (Leaf p a)
+        Node n pLeft probLeft probRight ->
             if numLeaves probLeft < numLeaves probRight
                 then
                     let
                         newProbLeft = buildHelper (p, a) probLeft
-                    in Node (n + 1) (pLeft + p) newProbLeft pRight probRight
+                    in Node (n + 1) (pLeft + p) newProbLeft probRight
                 else
                     let
                         newProbRight = buildHelper (p, a) probRight
-                    in Node (n + 1) pLeft probLeft (pRight + p) newProbRight
+                    in Node (n + 1) pLeft probLeft newProbRight
 
 buildProbable :: [(Double, a)] -> Probable a
 buildProbable probabilities =
