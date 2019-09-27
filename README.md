@@ -11,4 +11,4 @@ I have trained it to generate texts my wife might send.
 
 This project was built using stack:
 - to build: stack build
-- to run: stack exec Markov-exe
+- to run: stack exec Markov

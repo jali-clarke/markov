@@ -1,6 +1,7 @@
 module Markov (
     Markov,
 
+    emptyMarkov,
     trainMarkovOnSentence,
     trainMarkovOnSentences,
 
@@ -18,7 +19,26 @@ emptyMarkov :: Markov a
 emptyMarkov = Markov emptyBag M.empty
 
 trainMarkovOnSentence :: Ord a => [a] -> Markov a -> Markov a
-trainMarkovOnSentence = undefined
+trainMarkovOnSentence sentence markov@(Markov bag mapping) =
+    let pairs list =
+            case list of
+                [] -> []
+                _ : [] -> []
+                x : rest@(y : _) -> (x, y) : pairs rest
+
+        insertPair (key, value) mapping' =
+            let alterFunction maybeBag =
+                    Just $ case maybeBag of
+                        Nothing -> insert value emptyBag
+                        Just bag' -> insert value bag'
+            in M.alter alterFunction key mapping'
+
+    in case sentence of
+        [] -> markov
+        word : _ ->
+            let newBag = insert word bag
+                newMapping = foldr insertPair mapping (pairs sentence)
+            in Markov newBag newMapping
 
 trainMarkovOnSentences :: Ord a => [[a]] -> Markov a -> Markov a
 trainMarkovOnSentences = flip (foldr trainMarkovOnSentence)
