@@ -1,47 +1,38 @@
 module Markov (
-    buildMarkov,
-    getNext,
-    stream
+    Markov,
+
+    trainMarkovOnSentence,
+    trainMarkovOnSentences,
+
+    generateSentence
 ) where
 
-import Debug.Trace (trace)
+import Control.Monad.Random (MonadRandom)
 
-import Data.Maybe (maybe)
-import qualified Data.Map as Map
-import Control.Monad.Random.Lazy (MonadRandom)
+data Markov a
 
-import Probable
+emptyMarkov :: Markov a
+emptyMarkov = undefined
 
-newtype Markov a = Markov (Map.Map a (Probable a))
+trainMarkovOnSentence :: Ord a => [a] -> Markov a -> Markov a
+trainMarkovOnSentence = undefined
 
-buildMarkov :: Ord a => [a] -> Markov a
-buildMarkov = buildMarkovHelper . calculateStats
+trainMarkovOnSentences :: Ord a => [[a]] -> Markov a -> Markov a
+trainMarkovOnSentences = flip (foldr trainMarkovOnSentence)
 
-getNext :: (Ord a, MonadRandom m) => Markov a -> a -> m (Maybe a)
-getNext (Markov markovMap) a = maybe (pure Nothing) measure (Map.lookup a markovMap)
+queryMarkov :: MonadRandom m => Markov a -> a -> m (Maybe a)
+queryMarkov = undefined
 
-stream :: (Show a, Ord a, MonadRandom m) => Markov a -> a -> m [a]
-stream markov seed = trace (show seed) $ fmap (seed :) $ getNext markov seed >>= maybe (pure []) (stream markov)
+getMarkovInit :: MonadRandom m => Markov a -> m (Maybe a)
+getMarkovInit = undefined
 
-buildMarkovHelper :: Map.Map a (Map.Map a Int) -> Markov a
-buildMarkovHelper =
-    let
-        mapToProbable = buildProbable . fmap (\(a, count) -> (fromIntegral count, a)) . Map.assocs
-    in Markov . Map.map mapToProbable
+generateSentence :: MonadRandom m => Markov a -> m [a]
+generateSentence markov =
+    let generateSentenceWith action = do
+            token <- action
+            case token of
+                Nothing -> pure []
+                Just token' -> fmap (token' :) (generateSentenceHelper token')
 
-calculateStats :: Ord a => [a] -> Map.Map a (Map.Map a Int)
-calculateStats = foldr statsHelper Map.empty . pairs
-
-pairs :: [a] -> [(a, a)]
-pairs as =
-    case as of
-        [a, a'] -> [(a, a')]
-        a : a' : as' -> (a, a') : pairs (a' : as')
-        _ -> error "can't do pairs on list that does not have at least two elements"
-
-statsHelper :: Ord a => (a, a) -> Map.Map a (Map.Map a Int) -> Map.Map a (Map.Map a Int)
-statsHelper (first, next) statsMap =
-    let
-        innerStatsHelper = maybe (Just 1) (Just . (+ 1))
-        outerStatsHelper = Just . Map.alter innerStatsHelper next . maybe (Map.empty) id
-    in Map.alter outerStatsHelper first statsMap
+        generateSentenceHelper token = generateSentenceWith (queryMarkov markov token)
+    in generateSentenceWith (getMarkovInit markov)
