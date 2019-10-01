@@ -13,52 +13,53 @@ import qualified Data.Map as M
 
 import Bag
 
-data Markov a = Markov (Bag a) (M.Map a (Bag a))
+data MarkovToken a = Begin | Word a | End deriving (Eq, Ord)
+newtype Markov a = Markov (M.Map (MarkovToken a) (Bag (MarkovToken a)))
 
 emptyMarkov :: Markov a
-emptyMarkov = Markov emptyBag M.empty
+emptyMarkov = Markov M.empty
+
+tokenPairs :: [a] -> [(MarkovToken a, MarkovToken a)]
+tokenPairs xs =
+    let pairsHelper tokensList =
+            case tokensList of
+                [] -> []
+                [x] -> [(x, End)]
+                x : rest@(y : _) -> (x, y) : pairsHelper rest
+    in pairsHelper (Begin : fmap Word xs)
 
 trainMarkovOnSentence :: Ord a => [a] -> Markov a -> Markov a
-trainMarkovOnSentence sentence markov@(Markov bag mapping) =
-    let pairs list =
-            case list of
-                [] -> []
-                _ : [] -> []
-                x : rest@(y : _) -> (x, y) : pairs rest
-
-        insertPair (key, value) mapping' =
+trainMarkovOnSentence sentence (Markov mapping) =
+    let insertPair (key, value) mapping' =
             let alterFunction maybeBag =
                     Just $ case maybeBag of
                         Nothing -> insert value emptyBag
                         Just bag' -> insert value bag'
             in M.alter alterFunction key mapping'
 
-    in case sentence of
-        [] -> markov
-        word : _ ->
-            let newBag = insert word bag
-                newMapping = foldr insertPair mapping (pairs sentence)
-            in Markov newBag newMapping
+    in Markov $ foldr insertPair mapping (tokenPairs sentence)
 
 trainMarkovOnSentences :: Ord a => [[a]] -> Markov a -> Markov a
 trainMarkovOnSentences = flip (foldr trainMarkovOnSentence)
 
-queryMarkov :: (MonadRandom m, Ord a) => Markov a -> a -> m (Maybe a)
-queryMarkov (Markov _ mapping) value =
+queryMarkov :: (MonadRandom m, Ord a) => MarkovToken a -> Markov a -> m (Maybe (MarkovToken a))
+queryMarkov value (Markov mapping) =
     case M.lookup value mapping of
         Nothing -> pure Nothing
         Just bag -> takeWithReplacement bag
 
-getMarkovInit :: MonadRandom m => Markov a -> m (Maybe a)
-getMarkovInit (Markov bag _) = takeWithReplacement bag
+generateSentenceWithSeed :: (MonadRandom m, Ord a) => MarkovToken a -> Markov a -> m [a]
+generateSentenceWithSeed seed markov =
+    let generateSentenceNoPrepend = do
+            maybeToken <- queryMarkov seed markov
+            case maybeToken of
+                Nothing -> pure []
+                Just seed' -> generateSentenceWithSeed seed' markov
+
+    in case seed of
+        Begin -> generateSentenceNoPrepend
+        Word a -> fmap (a :) generateSentenceNoPrepend
+        End -> pure []
 
 generateSentence :: (MonadRandom m, Ord a) => Markov a -> m [a]
-generateSentence markov =
-    let generateSentenceWith action = do
-            token <- action
-            case token of
-                Nothing -> pure []
-                Just token' -> fmap (token' :) (generateSentenceHelper token')
-
-        generateSentenceHelper token = generateSentenceWith (queryMarkov markov token)
-    in generateSentenceWith (getMarkovInit markov)
+generateSentence = generateSentenceWithSeed Begin
