@@ -9,12 +9,15 @@ module Markov (
 ) where
 
 import Control.Monad.Random (MonadRandom)
+import Control.Monad.Reader
 import qualified Data.Map as M
 
 import Bag
 
 data MarkovToken a = Begin | Word a | End deriving (Eq, Ord)
 newtype Markov a = Markov (M.Map (MarkovToken a) (Bag (MarkovToken a)))
+
+type MarkovMonad a m b = ReaderT (Markov a) m b
 
 emptyMarkov :: Markov a
 emptyMarkov = Markov M.empty
@@ -42,19 +45,20 @@ trainMarkovOnSentence sentence (Markov mapping) =
 trainMarkovOnSentences :: Ord a => [[a]] -> Markov a -> Markov a
 trainMarkovOnSentences = flip (foldr trainMarkovOnSentence)
 
-queryMarkov :: (MonadRandom m, Ord a) => MarkovToken a -> Markov a -> m (Maybe (MarkovToken a))
-queryMarkov value (Markov mapping) =
+queryMarkov :: (MonadRandom m, Ord a) => MarkovToken a -> MarkovMonad a m (Maybe (MarkovToken a))
+queryMarkov value = do
+    Markov mapping <- ask
     case M.lookup value mapping of
         Nothing -> pure Nothing
-        Just bag -> takeWithReplacement bag
+        Just bag -> lift $ takeWithReplacement bag
 
-generateSentenceWithSeed :: (MonadRandom m, Ord a) => MarkovToken a -> Markov a -> m [a]
-generateSentenceWithSeed seed markov =
+generateSentenceWithSeed :: (MonadRandom m, Ord a) => MarkovToken a -> MarkovMonad a m [a]
+generateSentenceWithSeed seed =
     let generateSentenceNoPrepend = do
-            maybeToken <- queryMarkov seed markov
+            maybeToken <- queryMarkov seed
             case maybeToken of
                 Nothing -> pure []
-                Just seed' -> generateSentenceWithSeed seed' markov
+                Just seed' -> generateSentenceWithSeed seed'
 
     in case seed of
         Begin -> generateSentenceNoPrepend
@@ -62,4 +66,4 @@ generateSentenceWithSeed seed markov =
         End -> pure []
 
 generateSentence :: (MonadRandom m, Ord a) => Markov a -> m [a]
-generateSentence = generateSentenceWithSeed Begin
+generateSentence = runReaderT $ generateSentenceWithSeed Begin
