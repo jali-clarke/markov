@@ -21,9 +21,13 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
+- aeson == 1.4.2.0
 - containers == 0.6.0.1
 - MonadRandom == 0.5.1.1
 - mtl == 2.2.2
+- servant == 0.15
+- servant-server == 0.15
+- warp == 3.2.26
 
 library:
   source-dirs: src
