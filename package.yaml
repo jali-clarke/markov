@@ -42,5 +42,7 @@ executables:
     - -with-rtsopts=-N
     - -Wall
     - -Werror
+    - -optl-static
+    - -optl-pthread
     dependencies:
     - markov
