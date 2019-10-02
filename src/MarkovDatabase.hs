@@ -3,6 +3,7 @@ module MarkovDatabase (
     emptyDatabase,
 
     MarkovDatabaseMonad,
+    DatabaseError(..),
     runMarkovDatabaseMonad,
 
     makeNewMarkov,

@@ -1,26 +1,41 @@
+{-# LANGUAGE
+    OverloadedStrings
+#-}
+
 module Handlers (
     generateMessageHandler,
     trainHandler,
     calibrateHandler
 ) where
 
-import Control.Concurrent.MVar (MVar, readMVar, putMVar, swapMVar, takeMVar)
 import Control.Monad.Trans (MonadIO(..))
+import Data.ByteString.Lazy.Char8 (pack)
 import Servant
 
 import Api
-import Markov
+import MarkovDatabase
 
-generateMessageHandler :: MVar (Markov String) -> Handler GeneratedMessage
-generateMessageHandler markov = liftIO $ readMVar markov >>= fmap (GeneratedMessage . unwords) . generateSentence
+toHandlerWithDatabase :: MarkovDatabaseMonad a b -> MarkovDatabase a -> Handler b
+toHandlerWithDatabase action markov = do
+    result <- liftIO $ runMarkovDatabaseMonad action markov
+    case result of
+        Left (MarkovNotFound entity) -> throwError $ err404 {errBody = "markov map '" <> pack entity <> "' does not exist"}
+        Right result' -> pure result'
 
-trainHandler :: MVar (Markov String) -> TrainingMessages -> Handler NoContent
-trainHandler = modifyingHandler (const emptyMarkov)
+generateMessageHandler :: MarkovDatabase String -> Handler GeneratedMessage
+generateMessageHandler markov =
+    let sentenceGenerator = fmap (GeneratedMessage . unwords) (generateSentence "cool_database")
+    in toHandlerWithDatabase sentenceGenerator markov
 
-calibrateHandler :: MVar (Markov String) -> TrainingMessages -> Handler NoContent
-calibrateHandler = modifyingHandler id
+insertTrainingMessages :: String -> TrainingMessages -> MarkovDatabaseMonad String ()
+insertTrainingMessages markovName (TrainingMessages messages) = insertIntoMarkov markovName (fmap words messages)
 
-modifyingHandler :: (Markov String -> Markov String) -> MVar (Markov String) -> TrainingMessages -> Handler NoContent
-modifyingHandler modifier markov (TrainingMessages messagesToTrain) = liftIO . (NoContent <$) $ do
-    oldMarkov <- takeMVar markov
-    putMVar markov $ trainMarkovOnSentences (fmap words messagesToTrain) (modifier oldMarkov)
+trainHandler :: MarkovDatabase String -> TrainingMessages -> Handler NoContent
+trainHandler markov messages =
+    let initAndInsertion = makeNewMarkov "cool_database" *> insertTrainingMessages "cool_database" messages
+    in toHandlerWithDatabase (NoContent <$ initAndInsertion) markov
+
+calibrateHandler :: MarkovDatabase String -> TrainingMessages -> Handler NoContent
+calibrateHandler markov messages =
+    let insertion = insertTrainingMessages "cool_database" messages
+    in toHandlerWithDatabase (NoContent <$ insertion) markov
