@@ -23,25 +23,25 @@ toHandlerWithDatabase action markov = do
         Left (MarkovNotFound entity) -> throwError $ err404 {errBody = "markov map '" <> pack entity <> "' does not exist"}
         Right result' -> pure result'
 
-generateMessageHandler :: MarkovDatabase String -> Handler GeneratedMessage
-generateMessageHandler markov =
-    let sentenceGenerator = fmap (GeneratedMessage . unwords) (generateSentence "cool_database")
+generateMessageHandler :: MarkovDatabase String -> String -> Handler GeneratedMessage
+generateMessageHandler markov markovName =
+    let sentenceGenerator = fmap (GeneratedMessage . unwords) (generateSentence markovName)
     in toHandlerWithDatabase sentenceGenerator markov
 
 insertTrainingMessages :: String -> TrainingMessages -> MarkovDatabaseMonad String ()
 insertTrainingMessages markovName (TrainingMessages messages) = insertIntoMarkov markovName (fmap words messages)
 
-trainHandler :: MarkovDatabase String -> TrainingMessages -> Handler NoContent
-trainHandler markov messages =
-    let initAndInsertion = makeNewMarkov "cool_database" *> insertTrainingMessages "cool_database" messages
+trainHandler :: MarkovDatabase String -> String -> TrainingMessages -> Handler NoContent
+trainHandler markov markovName messages =
+    let initAndInsertion = makeNewMarkov markovName *> insertTrainingMessages markovName messages
     in toHandlerWithDatabase (NoContent <$ initAndInsertion) markov
 
-calibrateHandler :: MarkovDatabase String -> TrainingMessages -> Handler NoContent
-calibrateHandler markov messages =
-    let insertion = insertTrainingMessages "cool_database" messages
+calibrateHandler :: MarkovDatabase String -> String -> TrainingMessages -> Handler NoContent
+calibrateHandler markov markovName messages =
+    let insertion = insertTrainingMessages markovName messages
     in toHandlerWithDatabase (NoContent <$ insertion) markov
 
-deletionHandler :: MarkovDatabase String -> Handler NoContent
-deletionHandler markov =
-    let deletion = makeNewMarkov "cool_database"
+deletionHandler :: MarkovDatabase String -> String -> Handler NoContent
+deletionHandler markov markovName =
+    let deletion = deleteMarkov markovName
     in toHandlerWithDatabase (NoContent <$ deletion) markov

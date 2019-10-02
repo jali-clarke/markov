@@ -27,7 +27,8 @@ type GenerateMessageApi = "message" :> Get '[JSON] GeneratedMessage
 type TrainingAndCalibrationApi = ReqBody '[JSON] TrainingMessages :> (PostNoContent '[JSON] NoContent :<|> PutNoContent '[JSON] NoContent)
 type DeletionApi = DeleteNoContent '[JSON] NoContent
 
-type Api = GenerateMessageApi :<|> TrainingAndCalibrationApi :<|> DeletionApi
+type MarkovApi = GenerateMessageApi :<|> TrainingAndCalibrationApi :<|> DeletionApi
+type Api = Capture "markovName" String :> MarkovApi
 
 api :: Proxy Api
 api = Proxy
