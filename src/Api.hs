@@ -25,8 +25,9 @@ instance FromJSON TrainingMessages
 
 type GenerateMessageApi = "message" :> Get '[JSON] GeneratedMessage
 type TrainingAndCalibrationApi = ReqBody '[JSON] TrainingMessages :> (PostNoContent '[JSON] NoContent :<|> PutNoContent '[JSON] NoContent)
+type DeletionApi = DeleteNoContent '[JSON] NoContent
 
-type Api = GenerateMessageApi :<|> TrainingAndCalibrationApi
+type Api = GenerateMessageApi :<|> TrainingAndCalibrationApi :<|> DeletionApi
 
 api :: Proxy Api
 api = Proxy

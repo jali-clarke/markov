@@ -5,7 +5,8 @@
 module Handlers (
     generateMessageHandler,
     trainHandler,
-    calibrateHandler
+    calibrateHandler,
+    deletionHandler
 ) where
 
 import Control.Monad.Trans (MonadIO(..))
@@ -39,3 +40,8 @@ calibrateHandler :: MarkovDatabase String -> TrainingMessages -> Handler NoConte
 calibrateHandler markov messages =
     let insertion = insertTrainingMessages "cool_database" messages
     in toHandlerWithDatabase (NoContent <$ insertion) markov
+
+deletionHandler :: MarkovDatabase String -> Handler NoContent
+deletionHandler markov =
+    let deletion = makeNewMarkov "cool_database"
+    in toHandlerWithDatabase (NoContent <$ deletion) markov

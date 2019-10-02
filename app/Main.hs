@@ -14,7 +14,7 @@ server :: MarkovDatabase String -> Server Api
 server markov =
     let trainingAndCalibrationServer markov' trainingMessages =
             trainHandler markov' trainingMessages :<|> calibrateHandler markov' trainingMessages
-    in generateMessageHandler markov :<|> trainingAndCalibrationServer markov
+    in generateMessageHandler markov :<|> trainingAndCalibrationServer markov :<|> deletionHandler markov
 
 main :: IO ()
 main = do
