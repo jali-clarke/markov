@@ -29,6 +29,9 @@ type MarkovDatabaseMonad a b = MTL.ReaderT (MarkovDatabase a) (MTL.ExceptT Datab
 runMarkovDatabaseMonad :: MarkovDatabaseMonad a b -> MarkovDatabase a -> IO (Either DatabaseError b)
 runMarkovDatabaseMonad action database = MTL.runExceptT $ MTL.runReaderT action database
 
+emptyDatabase :: IO (MarkovDatabase a)
+emptyDatabase = fmap MarkovDatabase (newMVar M.empty)
+
 modifyDatabase :: (DatabaseInner a -> DatabaseInner a) -> MarkovDatabaseMonad a ()
 modifyDatabase modifier = do
     MarkovDatabase mvar <- MTL.ask
@@ -38,9 +41,6 @@ withDatabase :: (DatabaseInner a -> b) -> MarkovDatabaseMonad a b
 withDatabase accessor = do
     MarkovDatabase mvar <- MTL.ask
     MTL.liftIO $ withMVar mvar (pure . accessor)
-
-emptyDatabase :: IO (MarkovDatabase a)
-emptyDatabase = fmap MarkovDatabase (newMVar M.empty)
 
 makeNewMarkov :: String -> MarkovDatabaseMonad a ()
 makeNewMarkov key =
@@ -60,6 +60,15 @@ modifyMarkov markovName modifier =
         markovNameExists <- markovExists markovName
         when (not markovNameExists) (MTL.throwError $ MarkovNotFound markovName)
         modifyDatabase databaseModifier
+
+withMarkov :: String -> (MarkovInner a -> b) -> MarkovDatabaseMonad a b
+withMarkov markovName accessor =
+    let databaseAccessor database = fmap accessor $ M.lookup markovName database
+    in do
+        result <- withDatabase databaseAccessor
+        case result of
+            Nothing -> MTL.throwError $ MarkovNotFound markovName
+            Just result' -> pure result'
 
 deleteMarkov :: String -> MarkovDatabaseMonad a ()
 deleteMarkov key =
