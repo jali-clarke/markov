@@ -6,12 +6,12 @@ module MarkovDatabase (
     runMarkovDatabaseMonad,
 
     makeNewMarkov,
-    markovExists,
     deleteMarkov,
     insertIntoMarkov
 ) where
 
 import Control.Concurrent (MVar, modifyMVar_, newMVar, withMVar)
+import Control.Monad (when)
 import qualified Control.Monad.Reader as MTL
 import qualified Control.Monad.Except as MTL
 import qualified Data.Map as M
@@ -23,7 +23,7 @@ type MarkovInner a = M.Map (MarkovToken a) (BagInner (MarkovToken a))
 type DatabaseInner a = M.Map String (MarkovInner a)
 newtype MarkovDatabase a = MarkovDatabase (MVar (DatabaseInner a))
 
-data DatabaseError = NotFound
+data DatabaseError = MarkovNotFound String
 type MarkovDatabaseMonad a b = MTL.ReaderT (MarkovDatabase a) (MTL.ExceptT DatabaseError IO) b
 
 runMarkovDatabaseMonad :: MarkovDatabaseMonad a b -> MarkovDatabase a -> IO (Either DatabaseError b)
@@ -52,6 +52,15 @@ markovExists key =
     let markovChecker database = M.member key database
     in withDatabase markovChecker
 
+modifyMarkov :: String -> (MarkovInner a -> MarkovInner a) -> MarkovDatabaseMonad a ()
+modifyMarkov markovName modifier =
+    let alterFunction = fmap modifier
+        databaseModifier database = M.alter alterFunction markovName database
+    in do
+        markovNameExists <- markovExists markovName
+        when (not markovNameExists) (MTL.throwError $ MarkovNotFound markovName)
+        modifyDatabase databaseModifier
+
 deleteMarkov :: String -> MarkovDatabaseMonad a ()
 deleteMarkov key =
     let markovDeleter database = M.delete key database
@@ -76,17 +85,16 @@ tokenPairs xs =
 
 trainMarkovOnSentence :: Ord a => [a] -> MarkovInner a -> MarkovInner a
 trainMarkovOnSentence sentence mapping =
-    let insertPair (key, value) mapping' =
-            let alterFunction maybeBag =
-                    Just $ case maybeBag of
-                        Nothing -> insertIntoBagInner value M.empty
-                        Just bag' -> insertIntoBagInner value bag'
-            in M.alter alterFunction key mapping'
+    let alterFunction value maybeBag =
+            Just $ case maybeBag of
+                Nothing -> insertIntoBagInner value M.empty
+                Just bag -> insertIntoBagInner value bag
 
+        insertPair (key, value) mapping' = M.alter (alterFunction value) key mapping'
     in foldr insertPair mapping (tokenPairs sentence)
 
 trainMarkovOnSentences :: Ord a => [[a]] -> MarkovInner a -> MarkovInner a
 trainMarkovOnSentences = flip (foldr trainMarkovOnSentence)
 
 insertIntoMarkov :: Ord a => String -> [[a]] -> MarkovDatabaseMonad a ()
-insertIntoMarkov = undefined
+insertIntoMarkov markovName sentences = modifyMarkov markovName (trainMarkovOnSentences sentences)
