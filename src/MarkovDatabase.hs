@@ -1,16 +1,19 @@
 module MarkovDatabase (
     MarkovDatabase,
-
     emptyDatabase,
+
+    MarkovDatabaseMonad,
+    runMarkovDatabaseMonad,
 
     makeNewMarkov,
     markovExists,
     deleteMarkov,
-
     insertIntoMarkov
 ) where
 
 import Control.Concurrent (MVar, modifyMVar_, newMVar, withMVar)
+import qualified Control.Monad.Reader as MTL
+import qualified Control.Monad.Except as MTL
 import qualified Data.Map as M
 
 data MarkovToken a = Begin | Word a | End deriving (Eq, Ord)
@@ -20,23 +23,39 @@ type MarkovInner a = M.Map (MarkovToken a) (BagInner (MarkovToken a))
 type DatabaseInner a = M.Map String (MarkovInner a)
 newtype MarkovDatabase a = MarkovDatabase (MVar (DatabaseInner a))
 
+data DatabaseError = NotFound
+type MarkovDatabaseMonad a b = MTL.ReaderT (MarkovDatabase a) (MTL.ExceptT DatabaseError IO) b
+
+runMarkovDatabaseMonad :: MarkovDatabaseMonad a b -> MarkovDatabase a -> IO (Either DatabaseError b)
+runMarkovDatabaseMonad action database = MTL.runExceptT $ MTL.runReaderT action database
+
+modifyDatabase :: (DatabaseInner a -> DatabaseInner a) -> MarkovDatabaseMonad a ()
+modifyDatabase modifier = do
+    MarkovDatabase mvar <- MTL.ask
+    MTL.liftIO $ modifyMVar_ mvar (pure . modifier)
+
+withDatabase :: (DatabaseInner a -> b) -> MarkovDatabaseMonad a b
+withDatabase accessor = do
+    MarkovDatabase mvar <- MTL.ask
+    MTL.liftIO $ withMVar mvar (pure . accessor)
+
 emptyDatabase :: IO (MarkovDatabase a)
 emptyDatabase = fmap MarkovDatabase (newMVar M.empty)
 
-makeNewMarkov :: MarkovDatabase a -> String -> IO ()
-makeNewMarkov (MarkovDatabase mvar) key =
+makeNewMarkov :: String -> MarkovDatabaseMonad a ()
+makeNewMarkov key =
     let markovCreator database = M.insert key M.empty database
-    in modifyMVar_ mvar (pure . markovCreator)
+    in modifyDatabase markovCreator
 
-markovExists :: MarkovDatabase a -> String -> IO Bool
-markovExists (MarkovDatabase mvar) key =
+markovExists :: String -> MarkovDatabaseMonad a Bool
+markovExists key =
     let markovChecker database = M.member key database
-    in withMVar mvar (pure . markovChecker)
+    in withDatabase markovChecker
 
-deleteMarkov :: MarkovDatabase a -> String -> IO ()
-deleteMarkov (MarkovDatabase mvar) key =
+deleteMarkov :: String -> MarkovDatabaseMonad a ()
+deleteMarkov key =
     let markovDeleter database = M.delete key database
-    in modifyMVar_ mvar (pure . markovDeleter)
+    in modifyDatabase markovDeleter
 
 insertIntoBagInner :: Ord a => a -> BagInner a -> BagInner a
 insertIntoBagInner value mapping =
@@ -69,5 +88,5 @@ trainMarkovOnSentence sentence mapping =
 trainMarkovOnSentences :: Ord a => [[a]] -> MarkovInner a -> MarkovInner a
 trainMarkovOnSentences = flip (foldr trainMarkovOnSentence)
 
-insertIntoMarkov :: Ord a => MarkovDatabase a -> String -> [[a]] -> IO ()
+insertIntoMarkov :: Ord a => String -> [[a]] -> MarkovDatabaseMonad a ()
 insertIntoMarkov = undefined
