@@ -6,7 +6,8 @@ module Handlers (
     generateMessageHandler,
     trainHandler,
     calibrateHandler,
-    deletionHandler
+    deletionHandler,
+    markovNamesHandler
 ) where
 
 import Control.Monad.Trans (MonadIO(..))
@@ -45,3 +46,8 @@ deletionHandler :: MarkovDatabase String -> String -> Handler NoContent
 deletionHandler markov markovName =
     let deletion = deleteMarkov markovName
     in toHandlerWithDatabase (NoContent <$ deletion) markov
+
+markovNamesHandler :: MarkovDatabase String -> Handler MarkovNames
+markovNamesHandler markov =
+    let keysFetching = fmap MarkovNames markovNames
+    in toHandlerWithDatabase keysFetching markov

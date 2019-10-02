@@ -1,6 +1,7 @@
 module MarkovDatabase (
     MarkovDatabase,
     emptyDatabase,
+    markovNames,
 
     MarkovDatabaseMonad,
     DatabaseError(..),
@@ -45,6 +46,9 @@ withDatabase :: (DatabaseInner a -> b) -> MarkovDatabaseMonad a b
 withDatabase accessor = do
     MarkovDatabase mvar <- MTL.ask
     MTL.liftIO $ withMVar mvar (pure . accessor)
+
+markovNames :: MarkovDatabaseMonad a [String]
+markovNames = withDatabase M.keys
 
 makeNewMarkov :: String -> MarkovDatabaseMonad a ()
 makeNewMarkov key =
