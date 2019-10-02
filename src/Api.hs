@@ -8,10 +8,6 @@ module Api (
     api,
     Api,
 
-    GenerateMessageApi,
-    TrainApi,
-    CalibrateApi,
-
     GeneratedMessage(..),
     TrainingMessages(..)
 ) where
@@ -27,11 +23,10 @@ instance ToJSON GeneratedMessage
 data TrainingMessages = TrainingMessages {messages :: [String]} deriving Generic
 instance FromJSON TrainingMessages
 
-type GenerateMessageApi = "generateMessage" :> Get '[JSON] GeneratedMessage
-type TrainApi = "train" :> ReqBody '[JSON] TrainingMessages :> PostNoContent '[JSON] NoContent
-type CalibrateApi = "calibrate" :> ReqBody '[JSON] TrainingMessages :> PostNoContent '[JSON] NoContent
+type GenerateMessageApi = "message" :> Get '[JSON] GeneratedMessage
+type TrainingAndCalibrationApi = ReqBody '[JSON] TrainingMessages :> (PostNoContent '[JSON] NoContent :<|> PutNoContent '[JSON] NoContent)
 
-type Api = GenerateMessageApi :<|> TrainApi :<|> CalibrateApi
+type Api = GenerateMessageApi :<|> TrainingAndCalibrationApi
 
 api :: Proxy Api
 api = Proxy

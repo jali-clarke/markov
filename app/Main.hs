@@ -11,7 +11,10 @@ import Handlers
 import Markov
 
 server :: MVar (Markov String) -> Server Api
-server markov = generateMessageHandler markov :<|> trainHandler markov :<|> calibrateHandler markov
+server markov =
+    let trainingAndCalibrationServer markov' trainingMessages =
+            trainHandler markov' trainingMessages :<|> calibrateHandler markov' trainingMessages
+    in generateMessageHandler markov :<|> trainingAndCalibrationServer markov
 
 main :: IO ()
 main = do
