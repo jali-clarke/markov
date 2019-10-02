@@ -7,13 +7,16 @@ module MarkovDatabase (
 
     makeNewMarkov,
     deleteMarkov,
-    insertIntoMarkov
+    insertIntoMarkov,
+
+    generateSentence
 ) where
 
 import Control.Concurrent (MVar, modifyMVar_, newMVar, withMVar)
 import Control.Monad (when)
-import qualified Control.Monad.Reader as MTL
 import qualified Control.Monad.Except as MTL
+import Control.Monad.Random (MonadRandom, fromListMay)
+import qualified Control.Monad.Reader as MTL
 import qualified Data.Map as M
 
 data MarkovToken a = Begin | Word a | End deriving (Eq, Ord)
@@ -107,3 +110,31 @@ trainMarkovOnSentences = flip (foldr trainMarkovOnSentence)
 
 insertIntoMarkov :: Ord a => String -> [[a]] -> MarkovDatabaseMonad a ()
 insertIntoMarkov markovName sentences = modifyMarkov markovName (trainMarkovOnSentences sentences)
+
+takeWithReplacement :: MonadRandom m => BagInner a -> m (Maybe a)
+takeWithReplacement mapping = fromListMay (M.toList mapping)
+
+queryMarkov :: (MonadRandom m, Ord a) => MarkovToken a -> MarkovInner a -> m (Maybe (MarkovToken a))
+queryMarkov value mapping = do
+    case M.lookup value mapping of
+        Nothing -> pure Nothing
+        Just bag -> takeWithReplacement bag
+
+generateSentenceWithSeed ::(MonadRandom m, Ord a) => MarkovToken a -> MarkovInner a -> m [a]
+generateSentenceWithSeed seed markov =
+    let generateSentenceNoPrepend seed' markov' = do
+            maybeToken <- queryMarkov seed' markov'
+            case maybeToken of
+                Nothing -> pure []
+                Just seed'' -> generateSentenceWithSeed seed'' markov'
+
+    in case seed of
+        Begin -> generateSentenceNoPrepend seed markov
+        Word a -> fmap (a :) (generateSentenceNoPrepend seed markov)
+        End -> pure []
+
+generateSentenceFromMarkov :: (MonadRandom m, Ord a) => MarkovInner a -> m [a]
+generateSentenceFromMarkov = generateSentenceWithSeed Begin
+
+generateSentence :: Ord a => String -> MarkovDatabaseMonad a [a]
+generateSentence markovName = withMarkov markovName generateSentenceFromMarkov >>= MTL.liftIO
