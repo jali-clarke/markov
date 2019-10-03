@@ -9,8 +9,7 @@ module Api (
     Api,
 
     GeneratedMessage(..),
-    TrainingMessages(..),
-    MarkovNames(..)
+    TrainingMessages(..)
 ) where
 
 import Data.Aeson
@@ -18,22 +17,19 @@ import Data.Proxy
 import GHC.Generics
 import Servant.API
 
+import Api.Database
+
 data GeneratedMessage = GeneratedMessage {message :: String} deriving Generic
 instance ToJSON GeneratedMessage
 
 data TrainingMessages = TrainingMessages {messages :: [String]} deriving Generic
 instance FromJSON TrainingMessages
 
-data MarkovNames = MarkovNames {names :: [String]} deriving Generic
-instance ToJSON MarkovNames
-
 type GenerateMessageApi = "message" :> Get '[JSON] GeneratedMessage
 type TrainingAndCalibrationApi = ReqBody '[JSON] TrainingMessages :> (PostNoContent '[JSON] NoContent :<|> PutNoContent '[JSON] NoContent)
 type DeletionApi = DeleteNoContent '[JSON] NoContent
 
 type MarkovApi = GenerateMessageApi :<|> TrainingAndCalibrationApi :<|> DeletionApi
-
-type DatabaseApi = Get '[JSON] MarkovNames
 
 type Api = DatabaseApi :<|> (Capture "markovName" String :> MarkovApi)
 

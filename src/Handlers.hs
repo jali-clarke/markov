@@ -1,29 +1,19 @@
-{-# LANGUAGE
-    OverloadedStrings
-#-}
-
 module Handlers (
     generateMessageHandler,
     trainHandler,
     calibrateHandler,
     deletionHandler,
-    markovNamesHandler
+    databaseServer
 ) where
 
 import Control.Monad.Trans (MonadIO(..))
-import Data.ByteString.Lazy.Char8 (pack)
 import Servant
 
 import Api
+import Api.Database
+import Api.Helpers
 import MarkovDatabase
 import SentenceGeneration
-
-toHandlerWithDatabase :: MarkovDatabaseMonad a b -> MarkovDatabase a -> Handler b
-toHandlerWithDatabase action markov = do
-    result <- liftIO $ runMarkovDatabaseMonad action markov
-    case result of
-        Left (MarkovNotFound entity) -> throwError $ err404 {errBody = "markov map '" <> pack entity <> "' does not exist"}
-        Right result' -> pure result'
 
 generateMessageHandler :: MarkovDatabase String -> String -> Handler GeneratedMessage
 generateMessageHandler markov markovName = do
@@ -48,8 +38,3 @@ deletionHandler :: MarkovDatabase String -> String -> Handler NoContent
 deletionHandler markov markovName =
     let deletion = deleteMarkov markovName
     in toHandlerWithDatabase (NoContent <$ deletion) markov
-
-markovNamesHandler :: MarkovDatabase String -> Handler MarkovNames
-markovNamesHandler markov =
-    let keysFetching = fmap MarkovNames markovNames
-    in toHandlerWithDatabase keysFetching markov

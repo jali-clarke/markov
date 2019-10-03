@@ -19,7 +19,7 @@ server markov =
             generateMessageHandler markov markovName
             :<|> trainAndCalibrateHandler markovName
             :<|> deletionHandler markov markovName
-    in markovNamesHandler markov :<|> markovServer
+    in databaseServer markov :<|> markovServer
 
 main :: IO ()
 main = do
