@@ -4,7 +4,6 @@ module Api.Database.Handlers (
 
 import Servant
 
-import Api.Database.ApiType
 import Api.Database.Models
 import Api.Helpers
 import MarkovDatabase
