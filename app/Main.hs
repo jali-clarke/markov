@@ -6,20 +6,7 @@ import System.Environment (getArgs)
 import Text.Read (readMaybe)
 
 import Api
-import Handlers
 import MarkovDatabase
-
-server :: MarkovDatabase String -> Server Api
-server markov =
-    let trainAndCalibrateHandler markovName trainMessages =
-            trainHandler markov markovName trainMessages
-            :<|> calibrateHandler markov markovName trainMessages
-        
-        markovServer markovName =
-            generateMessageHandler markov markovName
-            :<|> trainAndCalibrateHandler markovName
-            :<|> deletionHandler markov markovName
-    in databaseServer markov :<|> markovServer
 
 main :: IO ()
 main = do
@@ -30,6 +17,6 @@ main = do
                 Nothing -> putStrLn "invalid port"
                 Just port -> do
                     markov <- emptyDatabase
-                    let application = serve api (server markov)
+                    let application = serve api (apiServer markov)
                     run port application
         _ -> putStrLn "usage: markov <port>"
