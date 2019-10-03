@@ -1,9 +1,6 @@
 module Corpus (
-    Bag,
     Corpus(..),
-
-    bagFor,
-    takeWithReplacement
+    queryCorpus
 ) where
 
 import Control.Monad.Random (MonadRandom, fromListMay)
@@ -19,3 +16,9 @@ bagFor seed (Corpus mapping) = M.lookup seed mapping
 
 takeWithReplacement :: MonadRandom m => Bag a -> m (Maybe (MarkovToken a))
 takeWithReplacement bag = fromListMay bag
+
+queryCorpus :: (MonadRandom m, Ord a) => MarkovToken a -> Corpus a -> m (Maybe (MarkovToken a))
+queryCorpus value corpus = do
+    case bagFor value corpus of
+        Nothing -> pure Nothing
+        Just bag -> takeWithReplacement bag

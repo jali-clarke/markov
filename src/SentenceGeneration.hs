@@ -7,16 +7,10 @@ import Control.Monad.Random (MonadRandom)
 import Corpus
 import MarkovToken
 
-queryMarkov :: (MonadRandom m, Ord a) => MarkovToken a -> Corpus a -> m (Maybe (MarkovToken a))
-queryMarkov value corpus = do
-    case bagFor value corpus of
-        Nothing -> pure Nothing
-        Just bag -> takeWithReplacement bag
-
 generateSentenceWithSeed :: (MonadRandom m, Ord a) => MarkovToken a -> Corpus a -> m [a]
 generateSentenceWithSeed seed markov =
     let generateSentenceNoPrepend seed' markov' = do
-            maybeToken <- queryMarkov seed' markov'
+            maybeToken <- queryCorpus seed' markov'
             case maybeToken of
                 Nothing -> pure []
                 Just seed'' -> generateSentenceWithSeed seed'' markov'
