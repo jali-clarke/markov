@@ -16,6 +16,7 @@ import Servant
 
 import Api
 import MarkovDatabase
+import SentenceGeneration
 
 toHandlerWithDatabase :: MarkovDatabaseMonad a b -> MarkovDatabase a -> Handler b
 toHandlerWithDatabase action markov = do
@@ -25,9 +26,10 @@ toHandlerWithDatabase action markov = do
         Right result' -> pure result'
 
 generateMessageHandler :: MarkovDatabase String -> String -> Handler GeneratedMessage
-generateMessageHandler markov markovName =
-    let sentenceGenerator = fmap (GeneratedMessage . unwords) (generateSentence markovName)
-    in toHandlerWithDatabase sentenceGenerator markov
+generateMessageHandler markov markovName = do
+    corpus <- toHandlerWithDatabase (getCorpus markovName) markov
+    let sentenceGenerator = fmap (GeneratedMessage . unwords) . generateSentence $ corpus
+    liftIO sentenceGenerator
 
 insertTrainingMessages :: String -> TrainingMessages -> MarkovDatabaseMonad String ()
 insertTrainingMessages markovName (TrainingMessages messages) = insertIntoMarkov markovName (fmap words messages)
