@@ -17,7 +17,6 @@ module MarkovDatabase (
 import Control.Concurrent (MVar, modifyMVar_, newMVar, withMVar)
 import Control.Monad (when)
 import qualified Control.Monad.Except as MTL
-import Control.Monad.Random (MonadRandom, fromListMay)
 import qualified Control.Monad.Reader as MTL
 import qualified Data.Map as M
 

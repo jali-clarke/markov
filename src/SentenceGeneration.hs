@@ -2,14 +2,10 @@ module SentenceGeneration (
     generateSentence
 ) where
 
-import Control.Monad.Random (MonadRandom, fromListMay)
-import qualified Data.Map as M
+import Control.Monad.Random (MonadRandom)
 
 import Corpus
 import MarkovToken
-
-takeWithReplacement :: MonadRandom m => Bag a -> m (Maybe (MarkovToken a))
-takeWithReplacement bag = fromListMay bag
 
 queryMarkov :: (MonadRandom m, Ord a) => MarkovToken a -> Corpus a -> m (Maybe (MarkovToken a))
 queryMarkov value corpus = do
@@ -17,7 +13,7 @@ queryMarkov value corpus = do
         Nothing -> pure Nothing
         Just bag -> takeWithReplacement bag
 
-generateSentenceWithSeed ::(MonadRandom m, Ord a) => MarkovToken a -> Corpus a -> m [a]
+generateSentenceWithSeed :: (MonadRandom m, Ord a) => MarkovToken a -> Corpus a -> m [a]
 generateSentenceWithSeed seed markov =
     let generateSentenceNoPrepend seed' markov' = do
             maybeToken <- queryMarkov seed' markov'
