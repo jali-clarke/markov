@@ -2,7 +2,7 @@
     OverloadedStrings
 #-}
 
-module Api.Helpers (
+module Api.Server.Helpers (
     toHandlerWithDatabase
 ) where
 

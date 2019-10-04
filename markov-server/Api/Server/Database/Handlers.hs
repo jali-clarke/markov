@@ -1,11 +1,11 @@
-module Api.Database.Handlers (
+module Api.Server.Database.Handlers (
     markovNamesHandler
 ) where
 
 import Servant
 
-import Api.Database.Models
-import Api.Helpers
+import Api.Database
+import Api.Server.Helpers
 import MarkovDatabase
 
 markovNamesHandler :: MarkovDatabase String -> Handler MarkovNames

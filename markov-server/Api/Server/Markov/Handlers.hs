@@ -1,4 +1,4 @@
-module Api.Markov.Handlers (
+module Api.Server.Markov.Handlers (
     generateMessageHandler,
     trainHandler,
     calibrateHandler,
@@ -8,8 +8,8 @@ module Api.Markov.Handlers (
 import Control.Monad.Trans (MonadIO(..))
 import Servant
 
-import Api.Markov.Models
-import Api.Helpers
+import Api.Markov
+import Api.Server.Helpers
 import MarkovDatabase
 import SentenceGeneration
 

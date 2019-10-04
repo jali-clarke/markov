@@ -31,15 +31,16 @@ dependencies:
 - warp == 3.2.26
 
 library:
-  source-dirs: src
+  source-dirs:
+  - api
   ghc-options:
   - -Wall
   - -Werror
 
 executables:
-  markov:
+  markov-server:
     main:                Main.hs
-    source-dirs:         app
+    source-dirs:         markov-server
     ghc-options:
     - -threaded
     - -rtsopts

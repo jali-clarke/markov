@@ -6,6 +6,7 @@ import System.Environment (getArgs)
 import Text.Read (readMaybe)
 
 import Api
+import Api.Server
 import MarkovDatabase
 
 main :: IO ()
