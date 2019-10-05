@@ -2,7 +2,6 @@ module MarkovToken (
     MarkovToken(..)
 ) where
 
-import qualified Data.ByteString.Builder as B
 import qualified Data.ByteString.Lazy as B
 
 import Serializable
@@ -12,9 +11,9 @@ data MarkovToken a = Begin | Word a | End deriving (Eq, Ord)
 instance Serializable a => Serializable (MarkovToken a) where
     serialize token =
         case token of
-            Begin -> B.toLazyByteString $ B.word8 0
-            Word a -> B.toLazyByteString $ B.word8 1 <> B.lazyByteString (serialize a)
-            End -> B.toLazyByteString $ B.word8 2
+            Begin -> B.singleton 0
+            Word a -> B.cons 1 (serialize a)
+            End -> B.singleton 2
 
     deserialize bytes = do
         (tag, rest) <- B.uncons bytes
