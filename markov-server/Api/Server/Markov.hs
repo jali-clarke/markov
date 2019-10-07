@@ -8,11 +8,11 @@ import Api.Markov
 import Api.Server.Markov.Handlers
 import MarkovDatabase
 
-markovServer :: MarkovDatabase String -> String -> Server MarkovApi
-markovServer markov markovName =
-    let trainAndRecalibrateHandler markov' markovName' trainingMessages =
-            trainHandler markov' markovName' trainingMessages
-            :<|> calibrateHandler markov' markovName' trainingMessages
-    in generateMessageHandler markov markovName
-        :<|> trainAndRecalibrateHandler markov markovName
-        :<|> deletionHandler markov markovName
+markovServer :: MarkovDatabaseBackend m => String -> ServerT MarkovApi (MarkovDatabaseMonad a m)
+markovServer markovName =
+    let trainAndRecalibrateHandler markovName' trainingMessages =
+            trainHandler markovName' trainingMessages
+            :<|> calibrateHandler markovName' trainingMessages
+    in generateMessageHandler markovName
+        :<|> trainAndRecalibrateHandler markovName
+        :<|> deletionHandler markovName

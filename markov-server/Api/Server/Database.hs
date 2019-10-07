@@ -8,5 +8,5 @@ import Api.Database
 import Api.Server.Database.Handlers
 import MarkovDatabase
 
-databaseServer :: MarkovDatabase String -> Server DatabaseApi
-databaseServer markov = markovNamesHandler markov
+databaseServer :: MarkovDatabaseBackend m => ServerT DatabaseApi (MarkovDatabaseMonad a m)
+databaseServer = markovNamesHandler

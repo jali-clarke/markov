@@ -9,5 +9,5 @@ import Api.Server.Database
 import Api.Server.Markov
 import MarkovDatabase
 
-apiServer :: MarkovDatabase String -> Server Api
-apiServer markov = databaseServer markov :<|> markovServer markov
+apiServer :: MarkovDatabaseBackend m => ServerT Api (MarkovDatabaseMonad a m)
+apiServer = databaseServer :<|> markovServer

@@ -4,5 +4,5 @@ COPY . /opt/build
 RUN cd /opt/build && stack build --system-ghc
 
 FROM scratch
-COPY --from=build /opt/build/.stack-work/install/x86_64-linux/lts-13.14/8.6.4/bin/markov ./
-CMD ["/markov", "5000"]
+COPY --from=build /opt/build/.stack-work/install/x86_64-linux/lts-13.14/8.6.4/bin/markov-server ./
+CMD ["/markov-server", "5000"]

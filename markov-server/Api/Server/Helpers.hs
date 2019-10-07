@@ -13,8 +13,8 @@ import Servant
 import InMemoryBackend
 import MarkovDatabase
 
-toHandlerWithDatabase :: MarkovDatabaseMonad a InMemoryBackend b -> InMemoryDB -> Handler b
-toHandlerWithDatabase action markov = do
+toHandlerWithDatabase :: InMemoryDB -> MarkovDatabaseMonad a InMemoryBackend b -> Handler b
+toHandlerWithDatabase markov action = do
     result <- liftIO $ hoistBackendAndRun (runWithInMemoryDB markov) action
     case result of
         Left err ->

@@ -12,7 +12,7 @@ import qualified Data.ByteString.Lazy as B
 
 data BackendError = MarkovNotFoundBackend String
 
-class MTL.MonadError BackendError m => MarkovDatabaseBackend m where
+class (MTL.MonadError BackendError m, MTL.MonadIO m) => MarkovDatabaseBackend m where
     backendCreateMarkov :: String -> m ()
     backendDeleteMarkov :: String -> m ()
     backendExistsMarkov :: String -> m Bool

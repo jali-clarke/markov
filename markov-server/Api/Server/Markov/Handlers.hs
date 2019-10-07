@@ -9,31 +9,26 @@ import Control.Monad.Trans (MonadIO(..))
 import Servant
 
 import Api.Markov
-import Api.Server.Helpers
 import MarkovDatabase
 import SentenceGeneration
 
-generateMessageHandler :: MarkovDatabase String -> String -> Handler GeneratedMessage
-generateMessageHandler markov markovName = do
-    corpus <- toHandlerWithDatabase (getCorpus markovName) markov
-    let sentenceGenerator = fmap (GeneratedMessage . unwords) . generateSentence $ corpus
-    liftIO sentenceGenerator
+generateMessageHandler :: MarkovDatabaseBackend m => String -> MarkovDatabaseMonad a m GeneratedMessage
+generateMessageHandler markovName = do
+    corpus <- getCorpus markovName
+    liftIO $ fmap (GeneratedMessage . unwords) (generateSentence corpus)
 
-insertTrainingMessages :: String -> TrainingMessages -> MarkovDatabaseMonad String ()
-insertTrainingMessages markovName (TrainingMessages trainingMessages) =
-    insertIntoMarkov markovName (fmap words trainingMessages)
+processTrainingMessages :: MarkovDatabaseBackend m => String -> TrainingMessages -> MarkovDatabaseMonad a m ()
+processTrainingMessages markovName (TrainingMessages trainingMessages) =
+    processIntoMarkov markovName (fmap words trainingMessages)
 
-trainHandler :: MarkovDatabase String -> String -> TrainingMessages -> Handler NoContent
-trainHandler markov markovName trainingMessages =
-    let initAndInsertion = makeNewMarkov markovName *> insertTrainingMessages markovName trainingMessages
-    in toHandlerWithDatabase (NoContent <$ initAndInsertion) markov
+trainHandler :: MarkovDatabaseBackend m => String -> TrainingMessages -> MarkovDatabaseMonad a m NoContent
+trainHandler markovName trainingMessages = (NoContent <$) $
+    deleteMarkov markovName
+    *> createMarkov markovName
+    *> processTrainingMessages markovName trainingMessages
 
-calibrateHandler :: MarkovDatabase String -> String -> TrainingMessages -> Handler NoContent
-calibrateHandler markov markovName trainingMessages =
-    let insertion = insertTrainingMessages markovName trainingMessages
-    in toHandlerWithDatabase (NoContent <$ insertion) markov
+calibrateHandler :: MarkovDatabaseBackend m => String -> TrainingMessages -> MarkovDatabaseMonad a m NoContent
+calibrateHandler markovName trainingMessages = NoContent <$ processTrainingMessages markovName trainingMessages
 
-deletionHandler :: MarkovDatabase String -> String -> Handler NoContent
-deletionHandler markov markovName =
-    let deletion = deleteMarkov markovName
-    in toHandlerWithDatabase (NoContent <$ deletion) markov
+deletionHandler :: MarkovDatabaseBackend m => String -> MarkovDatabaseMonad a m NoContent
+deletionHandler markovName = NoContent <$ deleteMarkov markovName

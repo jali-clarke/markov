@@ -7,7 +7,8 @@ import Text.Read (readMaybe)
 
 import Api
 import Api.Server
-import MarkovDatabase
+import Api.Server.Helpers
+import InMemoryBackend
 
 main :: IO ()
 main = do
@@ -17,7 +18,7 @@ main = do
             case readMaybe portString of
                 Nothing -> putStrLn "invalid port"
                 Just port -> do
-                    markov <- emptyDatabase
-                    let application = serve api (apiServer markov)
+                    markov <- emptyInMemoryDB
+                    let application = serve api $ hoistServer api (toHandlerWithDatabase markov) apiServer
                     run port application
         _ -> putStrLn "usage: markov <port>"

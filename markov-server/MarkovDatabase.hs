@@ -4,6 +4,7 @@
 #-}
 
 module MarkovDatabase (
+    MarkovDatabaseBackend(..),
     DatabaseError(..),
     MarkovDatabaseMonad,
     hoistBackendAndRun,
@@ -26,7 +27,7 @@ import MarkovDatabaseBackend
 import Serializable
 
 data DatabaseError = MarkovNotFound String | CorruptedData B.ByteString
-type MarkovDatabaseMonad a m b = MTL.ExceptT DatabaseError m b
+type MarkovDatabaseMonad a m = MTL.ExceptT DatabaseError m
 
 hoistBackendAndRun :: (MarkovDatabaseBackend m, Monad n) => (forall x. m x -> n (Either BackendError x)) -> MarkovDatabaseMonad a m b -> n (Either DatabaseError b)
 hoistBackendAndRun interpreter action = do
