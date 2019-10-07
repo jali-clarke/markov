@@ -1,5 +1,8 @@
 module MarkovToken (
-    MarkovToken(..)
+    MarkovToken(..),
+
+    pairs,
+    pairsMultipleSentences
 ) where
 
 import qualified Data.ByteString.Lazy as B
@@ -22,3 +25,15 @@ instance Serializable a => Serializable (MarkovToken a) where
             1 -> fmap Word $ deserialize rest
             2 -> if B.null rest then pure End else Nothing
             _ -> Nothing
+
+pairs :: [a] -> [(MarkovToken a, MarkovToken a)]
+pairs sentence =
+    let pairsHelper sentence' =
+            case sentence' of
+                [] -> []
+                [word] -> [(word, End)]
+                word0 : rest@(word1 : _) -> (word0, word1) : pairsHelper rest
+    in pairsHelper (Begin : fmap Word sentence)
+
+pairsMultipleSentences :: [[a]] -> [(MarkovToken a, MarkovToken a)]
+pairsMultipleSentences = foldr (++) [] . fmap pairs
