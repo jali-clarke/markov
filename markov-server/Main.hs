@@ -19,6 +19,7 @@ main = do
                 Nothing -> putStrLn "invalid port"
                 Just port -> do
                     markov <- emptyInMemoryDB
-                    let application = serve api $ hoistServer api (toHandlerWithDatabase markov) apiServer
+                    let interpreter = hoistToHandler (runWithInMemoryDB markov)
+                        application = serve api $ hoistServer api interpreter apiServer
                     run port application
         _ -> putStrLn "usage: markov <port>"

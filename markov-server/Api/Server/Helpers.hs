@@ -1,21 +1,22 @@
 {-# LANGUAGE
-    OverloadedStrings
+    OverloadedStrings,
+    RankNTypes
 #-}
 
 module Api.Server.Helpers (
-    toHandlerWithDatabase
+    hoistToHandler
 ) where
 
 import Control.Monad.Trans (MonadIO(..))
 import Data.ByteString.Lazy.Char8 (pack)
 import Servant
 
-import InMemoryBackend
 import MarkovDatabase
+import MarkovDatabaseBackend
 
-toHandlerWithDatabase :: InMemoryDB -> MarkovDatabaseMonad a InMemoryBackend b -> Handler b
-toHandlerWithDatabase markov action = do
-    result <- liftIO $ hoistBackendAndRun (runWithInMemoryDB markov) action
+hoistToHandler :: MarkovDatabaseBackend m => (forall x. m x -> IO (Either BackendError x)) -> MarkovDatabaseMonad a m b -> Handler b
+hoistToHandler interpreter action = do
+    result <- liftIO $ hoistBackendAndRun interpreter action
     case result of
         Left err ->
             case err of
