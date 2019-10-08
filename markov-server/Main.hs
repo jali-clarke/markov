@@ -10,16 +10,16 @@ import Api.Server
 import Api.Server.Helpers
 import InMemoryBackend
 
+startServer :: Int -> IO ()
+startServer port = do
+    markov <- emptyInMemoryDB
+    let interpreter = hoistToHandler (runWithInMemoryDB markov)
+        application = serve api $ hoistServer api interpreter apiServer
+    run port application
+
 main :: IO ()
 main = do
     args <- getArgs
     case args of
-        [portString] ->
-            case readMaybe portString of
-                Nothing -> putStrLn "invalid port"
-                Just port -> do
-                    markov <- emptyInMemoryDB
-                    let interpreter = hoistToHandler (runWithInMemoryDB markov)
-                        application = serve api $ hoistServer api interpreter apiServer
-                    run port application
+        [portString] -> maybe (putStrLn "invalid port") startServer (readMaybe portString)
         _ -> putStrLn "usage: markov <port>"
