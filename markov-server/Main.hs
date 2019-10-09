@@ -1,6 +1,7 @@
 module Main where
 
 import Network.Wai.Handler.Warp
+import Network.Wai.Middleware.RequestLogger
 import Servant
 import System.Environment (getArgs)
 import Text.Read (readMaybe)
@@ -14,7 +15,7 @@ startServer :: Int -> IO ()
 startServer port = do
     markov <- emptyInMemoryDB
     let interpreter = hoistToHandler (runWithInMemoryDB markov)
-        application = serve api $ hoistServer api interpreter apiServer
+        application = logStdout . serve api $ hoistServer api interpreter apiServer
     run port application
 
 main :: IO ()

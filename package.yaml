@@ -29,6 +29,7 @@ dependencies:
 - servant == 0.15
 - servant-server == 0.15
 - warp == 3.2.26
+- wai-extra == 3.0.25
 
 library:
   source-dirs:
