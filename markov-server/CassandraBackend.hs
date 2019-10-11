@@ -25,7 +25,7 @@ clientInitState :: String -> IO CQL.ClientState
 clientInitState host =
     let settings =
             CQL.setKeyspace (CQL.Keyspace "markov")
-            . CQL.setLogger (CQL.stdoutLogger CQL.LogDebug)
+            . CQL.setLogger (CQL.stdoutLogger CQL.LogInfo)
             . CQL.setContacts host []
             $ CQL.defSettings
     in CQL.init settings
@@ -46,7 +46,7 @@ liftClient action =
             Left err -> MTL.throwError $ OtherError (show err)
             Right result' -> pure result'
 
-createMarkovQuery :: CQL.PrepQuery CQL.W (CQL.Identity Text.Text) ()
+createMarkovQuery :: CQL.PrepQuery CQL.W (CQL.Identity Text.Text) CQL.Row
 createMarkovQuery = "INSERT INTO markov_names (markov_name) VALUES (?) IF NOT EXISTS"
 
 deleteMarkovQuery :: CQL.PrepQuery CQL.W (CQL.Identity Text.Text) ()
@@ -65,7 +65,7 @@ getCountsQuery :: CQL.PrepQuery CQL.R (CQL.Identity Text.Text) (CQL.Blob, CQL.Bl
 getCountsQuery = "SELECT seed, value, count FROM markov_data where markov_name = ?"
 
 insertMarkovDataQuery :: CQL.PrepQuery CQL.W (Text.Text, CQL.Blob, CQL.Blob) ()
-insertMarkovDataQuery = "UPDATE markov_names SET count = count + 1 WHERE markov_name = ? AND seed = ? AND value = ?"
+insertMarkovDataQuery = "UPDATE markov_data SET count = count + 1 WHERE markov_name = ? AND seed = ? AND value = ?"
 
 queryParams :: a -> CQL.QueryParams a
 queryParams = CQL.defQueryParams CQL.Quorum
@@ -86,7 +86,7 @@ instance MarkovDatabaseBackend CassandraBackend where
         let toString (CQL.Identity text) = Text.unpack text
         in liftClient . fmap (fmap toString) $ CQL.query listMarkovNamesQuery (queryParams ())
 
-    backendCreateMarkov = liftClient . void . CQL.write createMarkovQuery . markovNameParam
+    backendCreateMarkov = liftClient . void . CQL.trans createMarkovQuery . markovNameParam
 
     backendDeleteMarkov markovName = liftClient $ do
         CQL.write deleteMarkovQuery (markovNameParam markovName)
