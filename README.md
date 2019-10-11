@@ -6,8 +6,8 @@ This is a general idea which can be used (for example) for predictive text.  Thi
 
 ## Requirements
 * `libssl-dev`
+* a `cassandra` database with `markov_names` and `markov_data` column families
 
 ## Planned work
 * slack bot client to markov server
-* decouple storage (currently uses an in-memory database)
 * microservices!
