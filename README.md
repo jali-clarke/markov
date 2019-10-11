@@ -4,6 +4,9 @@ A previously-simple project demonstrating an implementation of Markov chains.  A
 
 This is a general idea which can be used (for example) for predictive text.  This is what is used in Reddit's r/subredditsimulator.  Currently exists as a web server - not much more than an in-memory database.
 
+## Requirements
+* `libssl-dev`
+
 ## Planned work
 * slack bot client to markov server
 * decouple storage (currently uses an in-memory database)
