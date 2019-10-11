@@ -13,8 +13,8 @@ module InMemoryBackend (
 
 import Control.Concurrent (MVar, modifyMVar, modifyMVar_, newMVar, withMVar)
 import Control.Monad (unless)
-import qualified Control.Monad.Reader as MTL
 import qualified Control.Monad.Except as MTL
+import qualified Control.Monad.Reader as MTL
 import qualified Data.ByteString.Lazy as B
 import qualified Data.Map as M
 
