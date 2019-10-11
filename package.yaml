@@ -20,16 +20,16 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/markov#readme>
 
 dependencies:
-- aeson == 1.4.5.0
+- aeson == 1.4.2.0
 - base >= 4.7 && < 5
-- bytestring == 0.10.10.0
-- containers == 0.6.2.1
+- bytestring == 0.10.8.2
+- containers == 0.6.0.1
 - MonadRandom == 0.5.1.1
 - mtl == 2.2.2
-- servant == 0.16.2
-- servant-server == 0.16.2
-- warp == 3.3.3
-- wai-extra == 3.0.28
+- servant == 0.15
+- servant-server == 0.15
+- warp == 3.2.26
+- wai-extra == 3.0.25
 
 library:
   source-dirs:
