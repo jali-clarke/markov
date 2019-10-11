@@ -24,11 +24,13 @@ dependencies:
 - base >= 4.7 && < 5
 - bytestring == 0.10.8.2
 - containers == 0.6.0.1
+- cql == 4.0.1
 - cql-io == 1.1.1
 - MonadRandom == 0.5.1.1
 - mtl == 2.2.2
 - servant == 0.15
 - servant-server == 0.15
+- text == 1.2.3.1
 - warp == 3.2.26
 - wai-extra == 3.0.25
 
