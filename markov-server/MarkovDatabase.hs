@@ -26,13 +26,14 @@ import MarkovToken
 import MarkovDatabaseBackend
 import Serializable
 
-data DatabaseError = MarkovNotFound String | CorruptedData B.ByteString
+data DatabaseError = MarkovNotFound String | CorruptedData B.ByteString | BackendFailure String
 type MarkovDatabaseMonad a m = MTL.ExceptT DatabaseError m
 
 translateBackendError :: BackendError -> DatabaseError
 translateBackendError err =
     case err of
         MarkovNotFoundBackend markovName -> MarkovNotFound markovName
+        OtherError message -> BackendFailure message
 
 hoistBackendAndRun :: (MarkovDatabaseBackend m, Monad n) => (forall x. m x -> n (Either BackendError x)) -> MarkovDatabaseMonad a m b -> n (Either DatabaseError b)
 hoistBackendAndRun interpreter action = do

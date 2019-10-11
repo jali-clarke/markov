@@ -10,7 +10,7 @@ module MarkovDatabaseBackend (
 import qualified Control.Monad.Except as MTL
 import qualified Data.ByteString.Lazy as B
 
-data BackendError = MarkovNotFoundBackend String
+data BackendError = MarkovNotFoundBackend String | OtherError String
 
 class (MTL.MonadError BackendError m, MTL.MonadIO m) => MarkovDatabaseBackend m where
     backendCreateMarkov :: String -> m ()
