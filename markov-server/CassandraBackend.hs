@@ -25,7 +25,7 @@ clientInitState :: String -> IO CQL.ClientState
 clientInitState host =
     let settings =
             CQL.setKeyspace (CQL.Keyspace "markov")
-            . CQL.setLogger (CQL.stdoutLogger CQL.LogInfo)
+            . CQL.setLogger (CQL.stdoutLogger CQL.LogDebug)
             . CQL.setContacts host []
             $ CQL.defSettings
     in CQL.init settings
@@ -62,7 +62,7 @@ listMarkovNamesQuery :: CQL.PrepQuery CQL.R () (CQL.Identity Text.Text)
 listMarkovNamesQuery = "SELECT markov_name FROM markov_names"
 
 getCountsQuery :: CQL.PrepQuery CQL.R (CQL.Identity Text.Text) (CQL.Blob, CQL.Blob, CQL.Counter)
-getCountsQuery = "SELECT seed, value, count FROM ?"
+getCountsQuery = "SELECT seed, value, count FROM markov_data where markov_name = ?"
 
 insertMarkovDataQuery :: CQL.PrepQuery CQL.W (Text.Text, CQL.Blob, CQL.Blob) ()
 insertMarkovDataQuery = "UPDATE markov_names SET count = count + 1 WHERE markov_name = ? AND seed = ? AND value = ?"
@@ -88,9 +88,9 @@ instance MarkovDatabaseBackend CassandraBackend where
 
     backendCreateMarkov = liftClient . void . CQL.write createMarkovQuery . markovNameParam
 
-    backendDeleteMarkov markovName = liftClient . CQL.batch $ do
-        CQL.addPrepQuery deleteMarkovQuery (markovNameParam' markovName)
-        CQL.addPrepQuery deleteMarkovEntriesQuery (markovNameParam' markovName)
+    backendDeleteMarkov markovName = liftClient $ do
+        CQL.write deleteMarkovQuery (markovNameParam markovName)
+        CQL.write deleteMarkovEntriesQuery (markovNameParam markovName)
 
     backendGetMarkovCounts markovName =
         let convertRow (CQL.Blob seed, CQL.Blob value, CQL.Counter count) = (seed, value, fromIntegral count)
@@ -103,4 +103,6 @@ instance MarkovDatabaseBackend CassandraBackend where
             params = fmap (\(seed, value) -> (packedMarkovName, CQL.Blob seed, CQL.Blob value)) entries
         in do
             checkMarkovExists markovName
-            liftClient . CQL.batch $ traverse_ (CQL.addPrepQuery insertMarkovDataQuery) params
+            liftClient . CQL.batch $
+                CQL.setType CQL.BatchUnLogged
+                *> traverse_ (CQL.addPrepQuery insertMarkovDataQuery) params
