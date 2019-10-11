@@ -1,23 +1,28 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: markov
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: markov
-  namespace: dev
+  name: markov-server
+  namespace: markov
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: markov
+      app: markov-server
   template:
     metadata:
       labels:
-        app: markov
+        app: markov-server
     spec:
       nodeSelector:
         beta.kubernetes.io/arch: amd64
       containers:
       - name: markov
-        image: docker.lan:5000/markov
+        image: docker.lan:5000/markov-server
         imagePullPolicy: Always
         ports:
         - name: http
@@ -26,12 +31,12 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: markov
-  namespace: dev
+  name: markov-server
+  namespace: markov
 spec:
   type: ClusterIP
   selector:
-    app: markov
+    app: markov-server
   clusterIP: None
   ports:
   - port: 80
@@ -41,12 +46,12 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: markov
-  namespace: dev
+  namespace: markov
 spec:
   rules:
   - host: markov.lan
     http:
       paths:
       - backend:
-          serviceName: markov
+          serviceName: markov-server
           servicePort: 80
