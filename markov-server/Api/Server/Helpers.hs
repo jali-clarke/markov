@@ -20,8 +20,8 @@ handleError err =
         MarkovNotFound entity -> throwError $ err404 {errBody = "markov map '" <> pack entity <> "' does not exist"}
         CorruptedData rawData -> do
             liftIO . putStrLn $ "corrupted data: " ++ show rawData
-            throwError $ err503 {errBody = "corrupted data"}
-        BackendFailure message -> throwError $ err503 {errBody = "backend failure: " <> pack message}
+            throwError $ err500 {errBody = "corrupted data"}
+        BackendFailure message -> throwError $ err500 {errBody = "backend failure: " <> pack message}
 
 hoistToHandler :: MarkovDatabaseBackend m => (forall x. m x -> IO (Either BackendError x)) -> MarkovDatabaseMonad a m b -> Handler b
 hoistToHandler interpreter action = do

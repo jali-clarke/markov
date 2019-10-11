@@ -11,6 +11,7 @@ module CassandraBackend (
 ) where
 
 import Control.Monad (unless)
+import Control.Monad.Catch (catch)
 import qualified Control.Monad.Except as MTL
 import Data.Foldable (traverse_)
 import Data.Functor (void)
@@ -36,7 +37,14 @@ runCassandraBackend :: CQL.ClientState -> CassandraBackend a -> IO (Either Backe
 runCassandraBackend state (CassandraBackend action) = CQL.runClient state . MTL.runExceptT $ action
 
 liftClient :: CQL.Client a -> CassandraBackend a
-liftClient = CassandraBackend . MTL.lift
+liftClient action =
+    let exceptionHandler :: CQL.ResponseError -> CQL.Client (Either CQL.ResponseError a)
+        exceptionHandler = pure . Left
+    in do
+        result <- CassandraBackend . MTL.lift $ fmap Right action `catch` exceptionHandler
+        case result of
+            Left err -> MTL.throwError $ OtherError (show err)
+            Right result' -> pure result'
 
 createMarkovQuery :: CQL.PrepQuery CQL.W (CQL.Identity Text.Text) ()
 createMarkovQuery = "INSERT INTO markov_names (markov_name) VALUES (?) IF NOT EXISTS"
@@ -51,7 +59,7 @@ existsMarkovQuery :: CQL.PrepQuery CQL.R (CQL.Identity Text.Text) (CQL.Identity 
 existsMarkovQuery = "SELECT markov_name FROM markov_names WHERE markov_name = ?"
 
 listMarkovNamesQuery :: CQL.PrepQuery CQL.R () (CQL.Identity Text.Text)
-listMarkovNamesQuery = "SELECT table_name FROM system_schema.tables where keyspace_name = 'markov'"
+listMarkovNamesQuery = "SELECT markov_name FROM markov_names"
 
 getCountsQuery :: CQL.PrepQuery CQL.R (CQL.Identity Text.Text) (CQL.Blob, CQL.Blob, CQL.Counter)
 getCountsQuery = "SELECT seed, value, count FROM ?"
