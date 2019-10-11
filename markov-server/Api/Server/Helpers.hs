@@ -21,7 +21,9 @@ handleError err =
         CorruptedData rawData -> do
             liftIO . putStrLn $ "corrupted data: " ++ show rawData
             throwError $ err500 {errBody = "corrupted data"}
-        BackendFailure message -> throwError $ err500 {errBody = "backend failure: " <> pack message}
+        BackendFailure message -> do
+            liftIO . putStrLn $ "backend failure: " ++ message
+            throwError $ err500 {errBody = "backend failure"}
 
 hoistToHandler :: MarkovDatabaseBackend m => (forall x. m x -> IO (Either BackendError x)) -> MarkovDatabaseMonad a m b -> Handler b
 hoistToHandler interpreter action = do
