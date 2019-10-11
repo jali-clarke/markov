@@ -84,7 +84,6 @@ instance MarkovDatabaseBackend InMemoryBackend where
         in modifyDatabase . M.alter alteration
 
     backendDeleteMarkov = modifyDatabase . M.delete
-    backendExistsMarkov = withDatabase . M.member
     backendMarkovNames = withDatabase M.keys
 
     backendGetMarkovCounts markovName = withMarkov markovName flatten
