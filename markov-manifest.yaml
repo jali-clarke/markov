@@ -20,13 +20,41 @@ spec:
     spec:
       nodeSelector:
         beta.kubernetes.io/arch: amd64
+      initContainers:
+      - name: db-init
+        image: nuvo/docker-cqlsh
+        env:
+        - name: CQLSH_HOST
+          value: cassandra.cassandra
+        volumeMounts:
+        - name: init-scripts
+          mountPath: /scripts
       containers:
       - name: markov
         image: docker.lan:5000/markov-server
         imagePullPolicy: Always
+        env:
+        - name: CASSANDRA_HOST
+          value: cassandra.cassandra
         ports:
         - name: http
           containerPort: 5000
+      volumes:
+      - name: init-scripts
+        configMap:
+          name: markov-init
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: markov-init
+  namespace: markov
+data:
+  markov-init.cql: |
+    CREATE KEYSPACE IF NOT EXISTS markov WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+    USE MARKOV;
+    CREATE TABLE IF NOT EXISTS markov_names (markov_name TEXT, PRIMARY KEY (markov_name));
+    CREATE TABLE IF NOT EXISTS markov_data (markov_name TEXT, seed BLOB, value BLOB, count COUNTER, PRIMARY KEY (markov_name, seed, value));
 ---
 kind: Service
 apiVersion: v1
