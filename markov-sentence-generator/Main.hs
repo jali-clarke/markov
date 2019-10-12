@@ -32,4 +32,4 @@ main = do
     args <- getArgs
     case args of
         [portString] -> maybe (putStrLn "invalid port") startServer (readMaybe portString)
-        _ -> putStrLn "usage: markov-server <port>"
+        _ -> putStrLn "usage: markov-sentence-generator <port>"
