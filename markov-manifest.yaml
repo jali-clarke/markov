@@ -20,15 +20,6 @@ spec:
     spec:
       nodeSelector:
         beta.kubernetes.io/arch: amd64
-      initContainers:
-      - name: db-init
-        image: nuvo/docker-cqlsh
-        env:
-        - name: CQLSH_HOST
-          value: cassandra.cassandra
-        volumeMounts:
-        - name: init-scripts
-          mountPath: /scripts
       containers:
       - name: markov
         image: docker.lan:5000/markov-server
@@ -39,6 +30,25 @@ spec:
         ports:
         - name: http
           containerPort: 5000
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-init
+  namespace: markov
+spec:
+  template:
+    spec:
+      containers:
+      - name: db-init
+        image: nuvo/docker-cqlsh
+        env:
+        - name: CQLSH_HOST
+          value: cassandra.cassandra
+        volumeMounts:
+        - name: init-scripts
+          mountPath: /scripts
+      restartPolicy: Never
       volumes:
       - name: init-scripts
         configMap:
