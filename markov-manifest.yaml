@@ -127,11 +127,18 @@ kind: Ingress
 metadata:
   name: markov
   namespace: markov
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   rules:
   - host: markov.lan
     http:
       paths:
-      - backend:
+      - path: /markovMaps/.*
+        backend:
           serviceName: markov-crud
+          servicePort: 80
+      - path: /markovMaps/.*/message
+        backend:
+          serviceName: markov-sentence-generator
           servicePort: 80
