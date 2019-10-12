@@ -39,6 +39,7 @@ dependencies:
 library:
   source-dirs:
   - api
+  - database
   ghc-options:
   - -Wall
   - -Werror
