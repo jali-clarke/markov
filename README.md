@@ -10,4 +10,3 @@ This is a general idea which can be used (for example) for predictive text.  Thi
 
 ## Planned work
 * slack bot client to markov server
-* microservices!
