@@ -7,7 +7,6 @@ import Data.Text (Text)
 import Servant
 
 import Api.ModelHelpers
-import Api.MarkovMaps.Message.Handlers
 import Api.MarkovMaps.Types
 import MarkovDatabase
 
@@ -39,8 +38,7 @@ deletionHandler markovName = NoContent <$ deleteMarkov markovName
 
 markovMapsOneHandler :: MarkovDatabaseBackend m => Text -> ServerT MarkovMapsOneApi (MarkovDatabaseMonad a m)
 markovMapsOneHandler markovName =
-    (markovNameHandler markovName :<|> trainHandler markovName :<|> deletionHandler markovName)
-    :<|> generateMessageHandler markovName
+    markovNameHandler markovName :<|> trainHandler markovName :<|> deletionHandler markovName
 
 markovMapsHandler :: MarkovDatabaseBackend m => ServerT MarkovMapsApi (MarkovDatabaseMonad a m)
 markovMapsHandler = markovMapsManyHandler :<|> markovMapsOneHandler

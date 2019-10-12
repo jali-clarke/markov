@@ -14,5 +14,7 @@ RUN apt-get update \
         libssl1.0.0 \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /usr/local/bin
-COPY --from=build /opt/build/.stack-work/install/x86_64-linux/lts-13.14/8.6.4/bin/markov-server ./
-CMD ["markov-server", "5000"]
+ARG TARGET
+COPY --from=build /opt/build/.stack-work/install/x86_64-linux/lts-13.14/8.6.4/bin/${TARGET} ./
+ENV EXEC_TARGET=${TARGET}
+CMD ${EXEC_TARGET} 5000

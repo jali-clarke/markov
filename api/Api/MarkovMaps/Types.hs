@@ -13,7 +13,6 @@ import GHC.Generics
 import Servant.API
 
 import Api.ModelHelpers
-import Api.MarkovMaps.Message.Types
 
 data MarkovMap = MarkovMap {name :: Text, href :: Maybe String} deriving Generic
 instance ToJSON MarkovMap
@@ -32,9 +31,9 @@ type MarkovMapsManyApi = MarkovMapGetAll :<|> MarkovMapCreate
 type MarkovMapGetOne = Get '[JSON] MarkovMap
 type MarkovMapTrain = ReqBody '[JSON] TrainingMessages :> PutNoContent '[JSON] NoContent
 type MarkovMapDelete = DeleteNoContent '[JSON] NoContent
-type MarkovMapsOneApi = (MarkovMapGetOne :<|> MarkovMapTrain :<|> MarkovMapDelete) :<|> ("message" :> MessageApi)
+type MarkovMapsOneApi = MarkovMapGetOne :<|> MarkovMapTrain :<|> MarkovMapDelete
 
-type MarkovMapsApi = MarkovMapsManyApi :<|> (Capture "markovMap" Text :> MarkovMapsOneApi)
+type MarkovMapsApi = "markovMaps" :> (MarkovMapsManyApi :<|> (Capture "markovMap" Text :> MarkovMapsOneApi))
 
-markovMapApi :: Proxy MarkovMapsApi
-markovMapApi = Proxy
+markovMapsApi :: Proxy MarkovMapsApi
+markovMapsApi = Proxy

@@ -6,9 +6,9 @@ import Servant
 import System.Environment (getArgs, lookupEnv)
 import Text.Read (readMaybe)
 
-import Api.Types
-import Api.Handlers
-import Api.Helpers
+import Api.HandlerHelpers
+import Api.MarkovMaps.Handlers
+import Api.MarkovMaps.Types
 import CassandraBackend
 
 cassandraHost :: IO String
@@ -24,7 +24,7 @@ startServer port = do
     dbHost <- cassandraHost
     clientState <- clientInitState dbHost
     let interpreter = hoistToHandler (runCassandraBackend clientState)
-        application = logStdout . serve api $ hoistServer api interpreter apiHandler
+        application = logStdout . serve markovMapsApi $ hoistServer markovMapsApi interpreter markovMapsHandler
     run port application
 
 main :: IO ()
@@ -32,4 +32,4 @@ main = do
     args <- getArgs
     case args of
         [portString] -> maybe (putStrLn "invalid port") startServer (readMaybe portString)
-        _ -> putStrLn "usage: markov-server <port>"
+        _ -> putStrLn "usage: markov-crud <port>"

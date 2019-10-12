@@ -3,7 +3,7 @@
     RankNTypes
 #-}
 
-module Api.Helpers (
+module Api.HandlerHelpers (
     hoistToHandler
 ) where
 

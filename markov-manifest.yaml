@@ -3,33 +3,17 @@ kind: Namespace
 metadata:
   name: markov
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: markov-server
+  name: markov-init
   namespace: markov
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: markov-server
-  template:
-    metadata:
-      labels:
-        app: markov-server
-    spec:
-      nodeSelector:
-        beta.kubernetes.io/arch: amd64
-      containers:
-      - name: markov
-        image: docker.lan:5000/markov-server
-        imagePullPolicy: Always
-        env:
-        - name: CASSANDRA_HOST
-          value: cassandra.cassandra
-        ports:
-        - name: http
-          containerPort: 5000
+data:
+  markov-init.cql: |
+    CREATE KEYSPACE IF NOT EXISTS markov WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+    USE MARKOV;
+    CREATE TABLE IF NOT EXISTS markov_names (markov_name TEXT, markov_id UUID, PRIMARY KEY (markov_name));
+    CREATE TABLE IF NOT EXISTS markov_data (markov_id UUID, seed BLOB, value BLOB, count COUNTER, PRIMARY KEY (markov_id, seed, value));
 ---
 apiVersion: batch/v1
 kind: Job
@@ -54,27 +38,85 @@ spec:
         configMap:
           name: markov-init
 ---
-apiVersion: v1
-kind: ConfigMap
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: markov-init
+  name: markov-crud
   namespace: markov
-data:
-  markov-init.cql: |
-    CREATE KEYSPACE IF NOT EXISTS markov WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
-    USE MARKOV;
-    CREATE TABLE IF NOT EXISTS markov_names (markov_name TEXT, markov_id UUID, PRIMARY KEY (markov_name));
-    CREATE TABLE IF NOT EXISTS markov_data (markov_id UUID, seed BLOB, value BLOB, count COUNTER, PRIMARY KEY (markov_id, seed, value));
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: markov-crud
+  template:
+    metadata:
+      labels:
+        app: markov-crud
+    spec:
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+      containers:
+      - name: markov
+        image: docker.lan:5000/markov-crud
+        imagePullPolicy: Always
+        env:
+        - name: CASSANDRA_HOST
+          value: cassandra.cassandra
+        ports:
+        - name: http
+          containerPort: 5000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: markov-sentence-generator
+  namespace: markov
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: markov-sentence-generator
+  template:
+    metadata:
+      labels:
+        app: markov-sentence-generator
+    spec:
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+      containers:
+      - name: markov
+        image: docker.lan:5000/markov-sentence-generator
+        imagePullPolicy: Always
+        env:
+        - name: CASSANDRA_HOST
+          value: cassandra.cassandra
+        ports:
+        - name: http
+          containerPort: 5000
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: markov-server
+  name: markov-crud
   namespace: markov
 spec:
   type: ClusterIP
   selector:
-    app: markov-server
+    app: markov-crud
+  clusterIP: None
+  ports:
+  - port: 80
+    targetPort: http
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: markov-sentence-generator
+  namespace: markov
+spec:
+  type: ClusterIP
+  selector:
+    app: markov-sentence-generator
   clusterIP: None
   ports:
   - port: 80
@@ -91,5 +133,5 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: markov-server
+          serviceName: markov-crud
           servicePort: 80
