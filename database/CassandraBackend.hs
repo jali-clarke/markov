@@ -74,20 +74,15 @@ queryParams = CQL.defQueryParams CQL.Quorum
 param :: a -> CQL.QueryParams (CQL.Identity a)
 param = queryParams . CQL.Identity
 
-markovNameParam :: String -> CQL.QueryParams (CQL.Identity Text.Text)
-markovNameParam = param . Text.pack
-
-markovId :: String -> CassandraBackend UUID
+markovId :: Text.Text -> CassandraBackend UUID
 markovId markovName = do
-    uuid <- liftClient . CQL.query1 markovIdQuery . markovNameParam $ markovName
+    uuid <- liftClient . CQL.query1 markovIdQuery . param $ markovName
     maybe (MTL.throwError $ MarkovNotFoundBackend markovName) (pure . CQL.runIdentity) uuid
 
 instance MarkovDatabaseBackend CassandraBackend where
-    backendMarkovNames =
-        let toString (CQL.Identity text) = Text.unpack text
-        in liftClient . fmap (fmap toString) $ CQL.query listMarkovNamesQuery (queryParams ())
+    backendMarkovNames = liftClient . fmap (fmap CQL.runIdentity) $ CQL.query listMarkovNamesQuery (queryParams ())
 
-    backendCreateMarkov = liftClient . void . CQL.trans createMarkovQuery . markovNameParam
+    backendCreateMarkov = liftClient . void . CQL.trans createMarkovQuery . param
 
     backendDeleteMarkov markovName =
         let handleError err =
@@ -97,8 +92,10 @@ instance MarkovDatabaseBackend CassandraBackend where
         in flip MTL.catchError handleError $ do
             uuid <- markovId markovName
             liftClient $ do
-                CQL.write deleteMarkovQuery (markovNameParam markovName)
+                CQL.write deleteMarkovQuery (param markovName)
                 CQL.write deleteMarkovEntriesQuery (param uuid)
+
+    backendMarkovExists markovName = (True <$ markovId markovName) `MTL.catchError` (\_ -> pure False)
 
     backendGetMarkovCounts markovName =
         let convertRow (CQL.Blob seed, CQL.Blob value, CQL.Counter count) = (seed, value, fromIntegral count)

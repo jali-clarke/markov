@@ -3,7 +3,7 @@
     TypeOperators
 #-}
 
-module Api (
+module Api.Types (
     Api,
     api
 ) where
@@ -11,10 +11,9 @@ module Api (
 import Data.Proxy
 import Servant.API
 
-import Api.Database
-import Api.Markov
+import Api.MarkovMaps.Types
 
-type Api = DatabaseApi :<|> (Capture "markovName" String :> MarkovApi)
+type Api = "markovMaps" :> MarkovMapsApi
 
 api :: Proxy Api
 api = Proxy

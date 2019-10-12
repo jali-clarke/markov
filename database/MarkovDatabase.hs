@@ -11,6 +11,7 @@ module MarkovDatabase (
 
     createMarkov,
     deleteMarkov,
+    markovExists,
     markovNames,
 
     processIntoMarkov,
@@ -20,13 +21,14 @@ module MarkovDatabase (
 import qualified Control.Monad.Except as MTL
 import qualified Data.ByteString.Lazy as B
 import qualified Data.Map as M
+import Data.Text (Text)
 
 import Corpus
 import MarkovToken
 import MarkovDatabaseBackend
 import Serializable
 
-data DatabaseError = MarkovNotFound String | CorruptedData B.ByteString | BackendFailure String
+data DatabaseError = MarkovNotFound Text | CorruptedData B.ByteString | BackendFailure String
 type MarkovDatabaseMonad a m = MTL.ExceptT DatabaseError m
 
 translateBackendError :: BackendError -> DatabaseError
@@ -42,14 +44,17 @@ hoistBackendAndRun interpreter action = do
         Left err -> Left (translateBackendError err)
         Right notBackendError -> notBackendError
 
-createMarkov :: MarkovDatabaseBackend m => String -> MarkovDatabaseMonad a m ()
+createMarkov :: MarkovDatabaseBackend m => Text -> MarkovDatabaseMonad a m ()
 createMarkov = MTL.lift . backendCreateMarkov
 
-deleteMarkov :: MarkovDatabaseBackend m => String -> MarkovDatabaseMonad a m ()
+deleteMarkov :: MarkovDatabaseBackend m => Text -> MarkovDatabaseMonad a m ()
 deleteMarkov = MTL.lift . backendDeleteMarkov
 
-markovNames :: MarkovDatabaseBackend m => MarkovDatabaseMonad a m [String]
+markovNames :: MarkovDatabaseBackend m => MarkovDatabaseMonad a m [Text]
 markovNames = MTL.lift backendMarkovNames
+
+markovExists :: MarkovDatabaseBackend m => Text -> MarkovDatabaseMonad a m Bool
+markovExists = MTL.lift . backendMarkovExists
 
 deserializeDB :: (MarkovDatabaseBackend m, Serializable a) => B.ByteString -> MarkovDatabaseMonad a m a
 deserializeDB serialized =
@@ -70,7 +75,7 @@ constructCorpus =
         insertion (seed, value, count) = M.alter (alteration (value, fromIntegral count)) seed
     in Corpus . foldr insertion M.empty
 
-getCorpus :: (MarkovDatabaseBackend m, Serializable a, Ord a) => String -> MarkovDatabaseMonad a m (Corpus a)
+getCorpus :: (MarkovDatabaseBackend m, Serializable a, Ord a) => Text -> MarkovDatabaseMonad a m (Corpus a)
 getCorpus markovName = do
     rawMarkovData <- MTL.lift $ backendGetMarkovCounts markovName
     corpusEntries <- traverse parseRawMarkovDataEntry rawMarkovData
@@ -79,7 +84,7 @@ getCorpus markovName = do
 serializeMarkovDataEntry :: Serializable a => (MarkovToken a, MarkovToken a) -> (B.ByteString, B.ByteString)
 serializeMarkovDataEntry (seed, value) = (serialize seed, serialize value)
 
-processIntoMarkov :: (MarkovDatabaseBackend m, Serializable a, Ord a) => String -> [[a]] -> MarkovDatabaseMonad a m ()
+processIntoMarkov :: (MarkovDatabaseBackend m, Serializable a, Ord a) => Text -> [[a]] -> MarkovDatabaseMonad a m ()
 processIntoMarkov markovName sentences =
     let toSerialize = pairsMultipleSentences sentences
         toPersist = fmap serializeMarkovDataEntry toSerialize

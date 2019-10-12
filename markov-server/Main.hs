@@ -6,9 +6,9 @@ import Servant
 import System.Environment (getArgs, lookupEnv)
 import Text.Read (readMaybe)
 
-import Api
-import Api.Server
-import Api.Server.Helpers
+import Api.Types
+import Api.Handlers
+import Api.Helpers
 import CassandraBackend
 
 cassandraHost :: IO String
@@ -24,7 +24,7 @@ startServer port = do
     dbHost <- cassandraHost
     clientState <- clientInitState dbHost
     let interpreter = hoistToHandler (runCassandraBackend clientState)
-        application = logStdout . serve api $ hoistServer api interpreter apiServer
+        application = logStdout . serve api $ hoistServer api interpreter apiHandler
     run port application
 
 main :: IO ()

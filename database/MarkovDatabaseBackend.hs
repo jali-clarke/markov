@@ -9,13 +9,15 @@ module MarkovDatabaseBackend (
 
 import qualified Control.Monad.Except as MTL
 import qualified Data.ByteString.Lazy as B
+import Data.Text (Text)
 
-data BackendError = MarkovNotFoundBackend String | OtherError String
+data BackendError = MarkovNotFoundBackend Text | OtherError String
 
 class (MTL.MonadError BackendError m, MTL.MonadIO m) => MarkovDatabaseBackend m where
-    backendCreateMarkov :: String -> m ()
-    backendDeleteMarkov :: String -> m ()
-    backendMarkovNames :: m [String]
+    backendCreateMarkov :: Text -> m ()
+    backendDeleteMarkov :: Text -> m ()
+    backendMarkovExists :: Text -> m Bool
+    backendMarkovNames :: m [Text]
 
-    backendGetMarkovCounts :: String -> m [(B.ByteString, B.ByteString, Int)]
-    backendIncrementMarkovCounts :: String -> [(B.ByteString, B.ByteString)] -> m ()
+    backendGetMarkovCounts :: Text -> m [(B.ByteString, B.ByteString, Int)]
+    backendIncrementMarkovCounts :: Text -> [(B.ByteString, B.ByteString)] -> m ()

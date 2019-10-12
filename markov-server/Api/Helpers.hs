@@ -3,12 +3,13 @@
     RankNTypes
 #-}
 
-module Api.Server.Helpers (
+module Api.Helpers (
     hoistToHandler
 ) where
 
 import Control.Monad.Trans (MonadIO(..))
-import Data.ByteString.Lazy.Char8 (pack)
+import qualified Data.ByteString.Builder as B
+import qualified Data.Text.Encoding as Text
 import Servant
 
 import MarkovDatabase
@@ -17,7 +18,9 @@ import MarkovDatabaseBackend
 handleError :: DatabaseError -> Handler a
 handleError err =
     case err of
-        MarkovNotFound entity -> throwError $ err404 {errBody = "markov map '" <> pack entity <> "' does not exist"}
+        MarkovNotFound entity ->
+            let message = B.lazyByteString "markov map '" <> Text.encodeUtf8Builder entity <> B.lazyByteString "' does not exist"
+            in throwError $ err404 {errBody = B.toLazyByteString message}
         CorruptedData rawData -> do
             liftIO . putStrLn $ "corrupted data: " ++ show rawData
             throwError $ err500 {errBody = "corrupted data"}
