@@ -1,4 +1,5 @@
 {-# LANGUAGE
+    FlexibleContexts,
     GeneralizedNewtypeDeriving,
     OverloadedStrings
 #-}
@@ -10,12 +11,12 @@ module CassandraBackend (
     runCassandraBackend
 ) where
 
-import Control.Monad (unless)
 import Control.Monad.Catch (catch)
 import qualified Control.Monad.Except as MTL
 import Data.Foldable (traverse_)
 import Data.Functor (void)
 import qualified Data.Text as Text
+import Data.UUID (UUID)
 import qualified Database.CQL.IO as CQL
 import qualified Database.CQL.Protocol as CQL
 
@@ -47,39 +48,39 @@ liftClient action =
             Right result' -> pure result'
 
 createMarkovQuery :: CQL.PrepQuery CQL.W (CQL.Identity Text.Text) CQL.Row
-createMarkovQuery = "INSERT INTO markov_names (markov_name) VALUES (?) IF NOT EXISTS"
+createMarkovQuery = "INSERT INTO markov_names (markov_name, markov_id) VALUES (?, uuid()) IF NOT EXISTS"
 
 deleteMarkovQuery :: CQL.PrepQuery CQL.W (CQL.Identity Text.Text) ()
 deleteMarkovQuery = "DELETE FROM markov_names WHERE markov_name = ?"
 
-deleteMarkovEntriesQuery :: CQL.PrepQuery CQL.W (CQL.Identity Text.Text) ()
-deleteMarkovEntriesQuery = "DELETE FROM markov_data where markov_name = ?"
+deleteMarkovEntriesQuery :: CQL.PrepQuery CQL.W (CQL.Identity UUID) ()
+deleteMarkovEntriesQuery = "DELETE FROM markov_data where markov_id = ?"
 
-existsMarkovQuery :: CQL.PrepQuery CQL.R (CQL.Identity Text.Text) (CQL.Identity Text.Text)
-existsMarkovQuery = "SELECT markov_name FROM markov_names WHERE markov_name = ?"
+markovIdQuery :: CQL.PrepQuery CQL.R (CQL.Identity Text.Text) (CQL.Identity UUID)
+markovIdQuery = "SELECT markov_id FROM markov_names WHERE markov_name = ?"
 
 listMarkovNamesQuery :: CQL.PrepQuery CQL.R () (CQL.Identity Text.Text)
 listMarkovNamesQuery = "SELECT markov_name FROM markov_names"
 
-getCountsQuery :: CQL.PrepQuery CQL.R (CQL.Identity Text.Text) (CQL.Blob, CQL.Blob, CQL.Counter)
-getCountsQuery = "SELECT seed, value, count FROM markov_data where markov_name = ?"
+getCountsQuery :: CQL.PrepQuery CQL.R (CQL.Identity UUID) (CQL.Blob, CQL.Blob, CQL.Counter)
+getCountsQuery = "SELECT seed, value, count FROM markov_data where markov_id = ?"
 
-insertMarkovDataQuery :: CQL.PrepQuery CQL.W (Text.Text, CQL.Blob, CQL.Blob) ()
-insertMarkovDataQuery = "UPDATE markov_data SET count = count + 1 WHERE markov_name = ? AND seed = ? AND value = ?"
+insertMarkovDataQuery :: CQL.PrepQuery CQL.W (UUID, CQL.Blob, CQL.Blob) ()
+insertMarkovDataQuery = "UPDATE markov_data SET count = count + 1 WHERE markov_id = ? AND seed = ? AND value = ?"
 
 queryParams :: a -> CQL.QueryParams a
 queryParams = CQL.defQueryParams CQL.Quorum
 
-markovNameParam' :: String -> CQL.Identity Text.Text
-markovNameParam' = CQL.Identity . Text.pack
+param :: a -> CQL.QueryParams (CQL.Identity a)
+param = queryParams . CQL.Identity
 
 markovNameParam :: String -> CQL.QueryParams (CQL.Identity Text.Text)
-markovNameParam = queryParams . markovNameParam'
+markovNameParam = param . Text.pack
 
-checkMarkovExists :: String -> CassandraBackend ()
-checkMarkovExists markovName = do
-    exists <- liftClient . fmap (/= Nothing) . CQL.query1 existsMarkovQuery . markovNameParam $ markovName
-    unless exists (MTL.throwError $ MarkovNotFoundBackend markovName)
+markovId :: String -> CassandraBackend UUID
+markovId markovName = do
+    uuid <- liftClient . CQL.query1 markovIdQuery . markovNameParam $ markovName
+    maybe (MTL.throwError $ MarkovNotFoundBackend markovName) (pure . CQL.runIdentity) uuid
 
 instance MarkovDatabaseBackend CassandraBackend where
     backendMarkovNames =
@@ -88,21 +89,26 @@ instance MarkovDatabaseBackend CassandraBackend where
 
     backendCreateMarkov = liftClient . void . CQL.trans createMarkovQuery . markovNameParam
 
-    backendDeleteMarkov markovName = liftClient $ do
-        CQL.write deleteMarkovQuery (markovNameParam markovName)
-        CQL.write deleteMarkovEntriesQuery (markovNameParam markovName)
+    backendDeleteMarkov markovName =
+        let handleError err =
+                case err of
+                    MarkovNotFoundBackend _ -> pure ()
+                    _ -> MTL.throwError err
+        in flip MTL.catchError handleError $ do
+            uuid <- markovId markovName
+            liftClient $ do
+                CQL.write deleteMarkovQuery (markovNameParam markovName)
+                CQL.write deleteMarkovEntriesQuery (param uuid)
 
     backendGetMarkovCounts markovName =
         let convertRow (CQL.Blob seed, CQL.Blob value, CQL.Counter count) = (seed, value, fromIntegral count)
         in do
-            checkMarkovExists markovName
-            liftClient . fmap (fmap convertRow) . CQL.query getCountsQuery . markovNameParam $ markovName
+            uuid <- markovId markovName
+            liftClient . fmap (fmap convertRow) . CQL.query getCountsQuery . param $ uuid
 
-    backendIncrementMarkovCounts markovName entries =
-        let packedMarkovName = Text.pack markovName
-            params = fmap (\(seed, value) -> (packedMarkovName, CQL.Blob seed, CQL.Blob value)) entries
-        in do
-            checkMarkovExists markovName
-            liftClient . CQL.batch $
-                CQL.setType CQL.BatchUnLogged
-                *> traverse_ (CQL.addPrepQuery insertMarkovDataQuery) params
+    backendIncrementMarkovCounts markovName entries = do
+        uuid <- markovId markovName
+        let params = fmap (\(seed, value) -> (uuid, CQL.Blob seed, CQL.Blob value)) entries
+        liftClient . CQL.batch $
+            CQL.setType CQL.BatchUnLogged
+            *> traverse_ (CQL.addPrepQuery insertMarkovDataQuery) params

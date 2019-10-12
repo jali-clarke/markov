@@ -63,8 +63,8 @@ data:
   markov-init.cql: |
     CREATE KEYSPACE IF NOT EXISTS markov WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
     USE MARKOV;
-    CREATE TABLE IF NOT EXISTS markov_names (markov_name TEXT, PRIMARY KEY (markov_name));
-    CREATE TABLE IF NOT EXISTS markov_data (markov_name TEXT, seed BLOB, value BLOB, count COUNTER, PRIMARY KEY (markov_name, seed, value));
+    CREATE TABLE IF NOT EXISTS markov_names (markov_name TEXT, markov_id UUID, PRIMARY KEY (markov_name));
+    CREATE TABLE IF NOT EXISTS markov_data (markov_id UUID, seed BLOB, value BLOB, count COUNTER, PRIMARY KEY (markov_id, seed, value));
 ---
 kind: Service
 apiVersion: v1
