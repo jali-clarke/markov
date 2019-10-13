@@ -7,16 +7,11 @@ module ServiceMain (
     serviceMain
 ) where
 
-import Data.Proxy
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.RequestLogger
 import Servant
 import System.Environment (getArgs, lookupEnv)
 import Text.Read (readMaybe)
-
-import Api.HandlerHelpers
-import CassandraBackend
-import MarkovDatabase
 
 cassandraHost :: IO String
 cassandraHost = do
@@ -26,17 +21,15 @@ cassandraHost = do
         Just "" -> "localhost"
         Just host -> host
 
-startServer :: HasServer a '[] => Proxy a -> ServerT a (MarkovDatabaseMonad b CassandraBackend) -> Int -> IO ()
-startServer api server port = do
+startServer :: (String -> IO Application) -> Int -> IO ()
+startServer app port = do
     dbHost <- cassandraHost
-    clientState <- clientInitState dbHost
-    let interpreter = hoistToHandler (runCassandraBackend clientState)
-        application = logStdout . serve api $ hoistServer api interpreter server
+    application <- fmap logStdout (app dbHost)
     run port application
 
-serviceMain :: HasServer a '[] => String -> Proxy a -> ServerT a (MarkovDatabaseMonad b CassandraBackend) -> IO ()
-serviceMain name api server = do
+serviceMain :: String -> (String -> IO Application) -> IO ()
+serviceMain name app = do
     args <- getArgs
     case args of
-        [portString] -> maybe (putStrLn "invalid port") (startServer api server) (readMaybe portString)
+        [portString] -> maybe (putStrLn "invalid port") (startServer app) (readMaybe portString)
         _ -> putStrLn $ "usage: " ++ name ++ " <port>"

@@ -26,19 +26,19 @@ markovNameHandler markovName = do
         then pure $ markovMapWithHref markovName
         else MTL.throwError $ MarkovNotFound markovName
 
-processTrainingMessages :: MarkovDatabaseBackend m => Text -> TrainingMessages -> MarkovDatabaseMonad a m ()
+processTrainingMessages :: MarkovDatabaseBackend m => Text -> TrainingMessages -> MarkovDatabaseMonad String m ()
 processTrainingMessages markovName (TrainingMessages trainingMessages) =
     processIntoMarkov markovName (fmap words trainingMessages)
 
-trainHandler :: MarkovDatabaseBackend m => Text -> ServerT MarkovMapTrain (MarkovDatabaseMonad a m)
+trainHandler :: MarkovDatabaseBackend m => Text -> ServerT MarkovMapTrain (MarkovDatabaseMonad String m)
 trainHandler markovName trainingMessages = NoContent <$ processTrainingMessages markovName trainingMessages
 
 deletionHandler :: MarkovDatabaseBackend m => Text -> ServerT MarkovMapDelete (MarkovDatabaseMonad a m)
 deletionHandler markovName = NoContent <$ deleteMarkov markovName
 
-markovMapsOneHandler :: MarkovDatabaseBackend m => Text -> ServerT MarkovMapsOneApi (MarkovDatabaseMonad a m)
+markovMapsOneHandler :: MarkovDatabaseBackend m => Text -> ServerT MarkovMapsOneApi (MarkovDatabaseMonad String m)
 markovMapsOneHandler markovName =
     markovNameHandler markovName :<|> trainHandler markovName :<|> deletionHandler markovName
 
-markovMapsHandler :: MarkovDatabaseBackend m => ServerT MarkovMapsApi (MarkovDatabaseMonad a m)
+markovMapsHandler :: MarkovDatabaseBackend m => ServerT MarkovMapsApi (MarkovDatabaseMonad String m)
 markovMapsHandler = markovMapsManyHandler :<|> markovMapsOneHandler

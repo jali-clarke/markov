@@ -1,4 +1,5 @@
 {-# LANGUAGE
+    GeneralizedNewtypeDeriving,
     RankNTypes,
     TupleSections
 #-}
@@ -29,7 +30,8 @@ import MarkovDatabaseBackend
 import Serializable
 
 data DatabaseError = MarkovNotFound Text | CorruptedData B.ByteString | BackendFailure String
-type MarkovDatabaseMonad a m = MTL.ExceptT DatabaseError m
+newtype MarkovDatabaseMonad a m b = MarkovDatabaseMonad (MTL.ExceptT DatabaseError m b)
+    deriving (Functor, Applicative, Monad, MTL.MonadIO, MTL.MonadError DatabaseError, MTL.MonadTrans)
 
 translateBackendError :: BackendError -> DatabaseError
 translateBackendError err =
@@ -38,7 +40,7 @@ translateBackendError err =
         OtherError message -> BackendFailure message
 
 hoistBackendAndRun :: (MarkovDatabaseBackend m, Monad n) => (forall x. m x -> n (Either BackendError x)) -> MarkovDatabaseMonad a m b -> n (Either DatabaseError b)
-hoistBackendAndRun interpreter action = do
+hoistBackendAndRun interpreter (MarkovDatabaseMonad action) = do
     potentialBackendError <- interpreter (MTL.runExceptT action)
     pure $ case potentialBackendError of
         Left err -> Left (translateBackendError err)
@@ -56,7 +58,7 @@ markovNames = MTL.lift backendMarkovNames
 markovExists :: MarkovDatabaseBackend m => Text -> MarkovDatabaseMonad a m Bool
 markovExists = MTL.lift . backendMarkovExists
 
-deserializeDB :: (MarkovDatabaseBackend m, Serializable a) => B.ByteString -> MarkovDatabaseMonad a m a
+deserializeDB :: (MarkovDatabaseBackend m, Serializable a) => B.ByteString -> MarkovDatabaseMonad a m (MarkovToken a)
 deserializeDB serialized =
     case deserialize serialized of
         Nothing -> MTL.throwError $ CorruptedData serialized

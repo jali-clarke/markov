@@ -9,7 +9,7 @@ import Api.MarkovMaps.Message.Types
 import MarkovDatabase
 import SentenceGeneration
 
-generateMessageHandler :: MarkovDatabaseBackend m => ServerT MessageApi (MarkovDatabaseMonad a m)
+generateMessageHandler :: MarkovDatabaseBackend m => ServerT MessageApi (MarkovDatabaseMonad String m)
 generateMessageHandler markovName = do
     corpus <- getCorpus markovName
     liftIO $ fmap (GeneratedMessage . unwords) (generateSentence corpus)
