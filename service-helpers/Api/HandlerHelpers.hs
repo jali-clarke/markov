@@ -28,7 +28,7 @@ handleError err =
             liftIO . putStrLn $ "backend failure: " ++ message
             throwError $ err500 {errBody = "backend failure"}
 
-hoistToHandler :: MarkovDatabaseBackend m => (forall x. m x -> IO (Either BackendError x)) -> MarkovDatabaseMonad a m b -> Handler b
+hoistToHandler :: MarkovDatabaseBackend m => (forall x. m x -> IO (Either BackendError x)) -> MarkovDatabaseMonad String m b -> Handler b
 hoistToHandler interpreter action = do
     result <- liftIO $ hoistBackendAndRun interpreter action
     case result of
