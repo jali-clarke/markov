@@ -38,9 +38,9 @@ dependencies:
 
 library:
   source-dirs:
-  - api
-  - database
-  - service-helpers
+  - src/api
+  - src/database
+  - src/service-helpers
   ghc-options:
   - -Wall
   - -Werror
@@ -48,7 +48,7 @@ library:
 executables:
   markov-crud:
     main:                Main.hs
-    source-dirs:         markov-crud
+    source-dirs:         app/markov-crud
     ghc-options:
     - -threaded
     - -rtsopts
@@ -60,7 +60,7 @@ executables:
 
   markov-sentence-generator:
     main:                Main.hs
-    source-dirs:         markov-sentence-generator
+    source-dirs:         app/markov-sentence-generator
     ghc-options:
     - -threaded
     - -rtsopts
