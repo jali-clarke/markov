@@ -10,5 +10,4 @@ This is a general idea which can be used (for example) for predictive text.  Thi
 
 ## Planned work
 * accept urlencoded markov `markov_names` only
-* `String` -> `Text` wherever possible
 * slack bot client to markov server

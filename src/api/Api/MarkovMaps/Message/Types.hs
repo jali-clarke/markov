@@ -12,7 +12,7 @@ import Data.Text (Text)
 import GHC.Generics
 import Servant.API
 
-data GeneratedMessage = GeneratedMessage {message :: String} deriving Generic
+data GeneratedMessage = GeneratedMessage {message :: Text} deriving Generic
 instance ToJSON GeneratedMessage
 
 type MessageApi = "markovMaps" :> Capture "markovMap" Text :> "message" :> Get '[JSON] GeneratedMessage

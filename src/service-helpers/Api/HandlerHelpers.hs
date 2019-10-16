@@ -9,6 +9,7 @@ module Api.HandlerHelpers (
 
 import Control.Monad.Trans (MonadIO(..))
 import qualified Data.ByteString.Builder as B
+import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import Servant
 
@@ -28,7 +29,7 @@ handleError err =
             liftIO . putStrLn $ "backend failure: " ++ message
             throwError $ err500 {errBody = "backend failure"}
 
-hoistToHandler :: MarkovDatabaseBackend m => (forall x. m x -> IO (Either BackendError x)) -> MarkovDatabaseMonad String m b -> Handler b
+hoistToHandler :: MarkovDatabaseBackend m => (forall x. m x -> IO (Either BackendError x)) -> MarkovDatabaseMonad Text.Text m b -> Handler b
 hoistToHandler interpreter action = do
     result <- liftIO $ hoistBackendAndRun interpreter action
     case result of

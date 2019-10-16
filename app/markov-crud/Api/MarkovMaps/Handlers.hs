@@ -3,7 +3,7 @@ module Api.MarkovMaps.Handlers (
 ) where
 
 import qualified Control.Monad.Except as MTL
-import Data.Text (Text)
+import qualified Data.Text as Text
 import Servant
 
 import Api.ModelHelpers
@@ -19,26 +19,26 @@ markovCreateHandler (MarkovMap markovName _) = NoContent <$ createMarkov markovN
 markovMapsManyHandler :: MarkovDatabaseBackend m => ServerT MarkovMapsManyApi (MarkovDatabaseMonad a m)
 markovMapsManyHandler = markovNamesHandler :<|> markovCreateHandler
 
-markovNameHandler :: MarkovDatabaseBackend m => Text -> ServerT MarkovMapGetOne (MarkovDatabaseMonad a m)
+markovNameHandler :: MarkovDatabaseBackend m => Text.Text -> ServerT MarkovMapGetOne (MarkovDatabaseMonad a m)
 markovNameHandler markovName = do
     exists <- markovExists markovName
     if exists
         then pure $ markovMapWithHref markovName
         else MTL.throwError $ MarkovNotFound markovName
 
-processTrainingMessages :: MarkovDatabaseBackend m => Text -> TrainingMessages -> MarkovDatabaseMonad String m ()
+processTrainingMessages :: MarkovDatabaseBackend m => Text.Text -> TrainingMessages -> MarkovDatabaseMonad Text.Text m ()
 processTrainingMessages markovName (TrainingMessages trainingMessages) =
-    processIntoMarkov markovName (fmap words trainingMessages)
+    processIntoMarkov markovName (fmap Text.words trainingMessages)
 
-trainHandler :: MarkovDatabaseBackend m => Text -> ServerT MarkovMapTrain (MarkovDatabaseMonad String m)
+trainHandler :: MarkovDatabaseBackend m => Text.Text -> ServerT MarkovMapTrain (MarkovDatabaseMonad Text.Text m)
 trainHandler markovName trainingMessages = NoContent <$ processTrainingMessages markovName trainingMessages
 
-deletionHandler :: MarkovDatabaseBackend m => Text -> ServerT MarkovMapDelete (MarkovDatabaseMonad a m)
+deletionHandler :: MarkovDatabaseBackend m => Text.Text -> ServerT MarkovMapDelete (MarkovDatabaseMonad a m)
 deletionHandler markovName = NoContent <$ deleteMarkov markovName
 
-markovMapsOneHandler :: MarkovDatabaseBackend m => Text -> ServerT MarkovMapsOneApi (MarkovDatabaseMonad String m)
+markovMapsOneHandler :: MarkovDatabaseBackend m => Text.Text -> ServerT MarkovMapsOneApi (MarkovDatabaseMonad Text.Text m)
 markovMapsOneHandler markovName =
     markovNameHandler markovName :<|> trainHandler markovName :<|> deletionHandler markovName
 
-markovMapsHandler :: MarkovDatabaseBackend m => ServerT MarkovMapsApi (MarkovDatabaseMonad String m)
+markovMapsHandler :: MarkovDatabaseBackend m => ServerT MarkovMapsApi (MarkovDatabaseMonad Text.Text m)
 markovMapsHandler = markovMapsManyHandler :<|> markovMapsOneHandler
