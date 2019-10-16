@@ -33,12 +33,15 @@ resolver: lts-13.14
 #  - auto-update
 #  - wai
 packages:
-- .
+- markov-api
+- markov-services
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - cql-io-1.1.1@sha256:897ef0811b227c8b1a269b29b9c1ebfb09c46f00d66834e2e8c6f19ea7f90f7d,4611
+
+dump-logs: all
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

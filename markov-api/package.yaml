@@ -1,0 +1,29 @@
+name:                markov-api
+version:             0.1.0.0
+github:              "jali-clarke/markov"
+license:             BSD3
+author:              "Jinnah Ali-Clarke"
+maintainer:          "jinnah.ali-clarke@outlook.com"
+copyright:           "2019 Jinnah Ali-Clarke"
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/jali-clarke/markov#readme>
+
+dependencies:
+- aeson == 1.4.2.0
+- base >= 4.7 && < 5
+- servant == 0.15
+- text == 1.2.3.1
+
+library:
+  source-dirs:
+  - src
+  ghc-options:
+  - -Wall
+  - -Werror
