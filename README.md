@@ -10,3 +10,5 @@ This is a general idea which can be used (for example) for predictive text.  Thi
 
 ## Planned work
 * slack bot client to markov server
+* twitter bot client to markov server
+* very simple frontend web app client to markov server
