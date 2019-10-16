@@ -9,5 +9,4 @@ This is a general idea which can be used (for example) for predictive text.  Thi
 * a `cassandra` database with `markov_names` and `markov_data` column families
 
 ## Planned work
-* accept urlencoded markov `markov_names` only
 * slack bot client to markov server

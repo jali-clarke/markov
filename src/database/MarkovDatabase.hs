@@ -29,7 +29,12 @@ import MarkovToken
 import MarkovDatabaseBackend
 import Serializable
 
-data DatabaseError = MarkovNotFound Text | CorruptedData B.ByteString | BackendFailure String
+data DatabaseError =
+    BackendFailure String
+    | BadRequest Text
+    | CorruptedData B.ByteString
+    | MarkovNotFound Text
+
 newtype MarkovDatabaseMonad a m b = MarkovDatabaseMonad (MTL.ExceptT DatabaseError m b)
     deriving (Functor, Applicative, Monad, MTL.MonadIO, MTL.MonadError DatabaseError, MTL.MonadTrans)
 

@@ -1,8 +1,14 @@
+{-# LANGUAGE
+    OverloadedStrings
+#-}
+
 module Api.MarkovMaps.Handlers (
     markovMapsHandler
 ) where
 
+import Control.Monad (when)
 import qualified Control.Monad.Except as MTL
+import qualified Data.Set as Set
 import qualified Data.Text as Text
 import Servant
 
@@ -13,8 +19,16 @@ import MarkovDatabase
 markovNamesHandler :: MarkovDatabaseBackend m => ServerT MarkovMapGetAll (MarkovDatabaseMonad a m)
 markovNamesHandler = fmap (ListOf . fmap markovMapWithHref) markovNames
 
+allowedCharacters :: Set.Set Char
+allowedCharacters = Set.fromList $ ['A'..'Z'] ++ ['a'..'z'] ++ ['0'..'9'] ++ "-_.~"
+
+nameIsInvalid :: Text.Text -> Bool
+nameIsInvalid = Text.any (flip Set.notMember allowedCharacters)
+
 markovCreateHandler :: MarkovDatabaseBackend m => ServerT MarkovMapCreate (MarkovDatabaseMonad a m)
-markovCreateHandler (MarkovMap markovName _) = NoContent <$ createMarkov markovName
+markovCreateHandler (MarkovMap markovName _) = NoContent <$ do
+    when (nameIsInvalid markovName) $ MTL.throwError (BadRequest $ "markov name '" <> markovName <> "' must be url-encoded")
+    createMarkov markovName
 
 markovMapsManyHandler :: MarkovDatabaseBackend m => ServerT MarkovMapsManyApi (MarkovDatabaseMonad a m)
 markovMapsManyHandler = markovNamesHandler :<|> markovCreateHandler
