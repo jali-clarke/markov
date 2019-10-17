@@ -9,6 +9,7 @@ This is a general idea which can be used (for example) for predictive text.  Thi
 * a `cassandra` database with `markov_names` and `markov_data` column families
 
 ## Planned work
+* fix docker build
 * slack bot client to markov server
 * twitter bot client to markov server
 * very simple frontend web app client to markov server
