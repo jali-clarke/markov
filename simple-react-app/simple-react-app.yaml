@@ -40,6 +40,8 @@ kind: Ingress
 metadata:
   name: simple-react-app
   namespace: markov
+  annotations:
+    kubernetes.io/ingress.class: "internal"
 spec:
   rules:
   - host: markov-app.lan

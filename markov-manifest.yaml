@@ -129,6 +129,7 @@ metadata:
   namespace: markov
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"
+    kubernetes.io/ingress.class: "internal"
 spec:
   rules:
   - host: markov.lan
