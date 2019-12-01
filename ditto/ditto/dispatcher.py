@@ -4,6 +4,7 @@ from ditto.slack_client import SlackClient
 
 from ditto.handlers.challenge import handle_challenge
 from ditto.handlers.dm import respond_to_dm
+from ditto.handlers.mentions import respond_to_mention
 
 _client = SlackClient()
 
@@ -26,6 +27,9 @@ def dispatch(logger, event_payload):
         if event_subtype == "message":
             logger.info("RESPONDING TO DM")
             return respond_to_dm(_client, event_internal)
+        elif event_subtype == "app_mention":
+            logger.info("RESPONDING TO MENTION")
+            return respond_to_mention(_client, event_internal)
         else:
             logger.info("UNKNOWN EVENT SUBTYPE")
             return {}

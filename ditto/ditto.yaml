@@ -28,6 +28,8 @@ spec:
             secretKeyRef:
               name: ditto-slack-tokens
               key: BOT_USER_OAUTH
+        - name: MARKOV_URL
+          value: "http://markov.lan"
         ports:
         - name: http
           containerPort: 80

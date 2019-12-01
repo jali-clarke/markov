@@ -3,7 +3,7 @@ import logging
 
 from ditto.dispatcher import dispatch
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 
 @app.route("/", methods=["POST"])
