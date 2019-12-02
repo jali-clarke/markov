@@ -4,8 +4,11 @@ import slack
 class SlackClient:
     def __init__(self):
         token = os.environ["OAUTH"]
+        bot_token = os.environ["BOT_USER_OAUTH"]
+        bot_client = slack.WebClient(token=bot_token)
+
         self._client = slack.WebClient(token=token)
-        self._self_user_id = self._client.auth_test()["user_id"]
+        self._self_user_id = bot_client.auth_test()["user_id"]
 
     def post_message(self, channel_id, text):
         self._client.chat_postMessage(channel=channel_id, text=text)
@@ -37,6 +40,6 @@ def _message_is_valid(user_id, ditto_user_id, message_body):
         return False
 
     is_correct_user = message_body.get("user") == user_id
-    is_not_for_ditto = not message_body["text"].lstrip().startswith(f"@<{ditto_user_id}>")
+    is_not_for_ditto = not message_body["text"].lstrip().startswith(f"<@{ditto_user_id}>")
 
     return is_correct_user and is_not_for_ditto
