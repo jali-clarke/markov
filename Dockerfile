@@ -2,8 +2,6 @@ FROM fpco/stack-build:lts-13.14 as build
 WORKDIR /opt/build
 COPY stack.yaml .
 RUN stack setup
-COPY package.yaml .
-RUN stack build --only-dependencies
 COPY . .
 RUN stack build
 
