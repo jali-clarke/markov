@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: app
-        image: docker.lan:5000/ditto:latest
+        image: nexus.lan:5000/ditto:latest
         imagePullPolicy: Always
         env:
         - name: OAUTH

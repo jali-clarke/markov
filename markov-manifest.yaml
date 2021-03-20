@@ -57,7 +57,7 @@ spec:
         beta.kubernetes.io/arch: amd64
       containers:
       - name: markov
-        image: docker.lan:5000/markov-crud
+        image: nexus.lan:5000/markov-crud
         imagePullPolicy: Always
         env:
         - name: CASSANDRA_HOST
@@ -85,7 +85,7 @@ spec:
         beta.kubernetes.io/arch: amd64
       containers:
       - name: markov
-        image: docker.lan:5000/markov-sentence-generator
+        image: nexus.lan:5000/markov-sentence-generator
         imagePullPolicy: Always
         env:
         - name: CASSANDRA_HOST
